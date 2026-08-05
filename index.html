@@ -155,8 +155,8 @@ kbd{font:600 13px var(--mono);background:#fff;border:1px solid var(--rule);
         with signal and test again. Do not leave until it loads offline.</li>
       <li>Confirm the <b>Send to</b> address is filled in on the Request tab.
         It is saved on the phone, per channel.</li>
-      <li>inReach: make sure the wx address is saved as a contact on the
-        device itself.</li>
+      <li>inReach: save the wx address as a contact, on the device or in
+        the Garmin app, whichever you send from.</li>
       <li>iPhone satellite: exchange one message with the wx number while you
         still have coverage. Apple can refuse satellite messages to contacts
         you have not messaged recently.</li>
@@ -175,9 +175,8 @@ kbd{font:600 13px var(--mono);background:#fff;border:1px solid var(--rule);
       <li>Tap <b>Use my location</b>. Step into the open if it fails. GPS
         works fine in airplane mode.</li>
       <li>Tap <b>Copy message</b>, paste it into a new message to your wx
-        address, and send.
-        <b>inReach: send from the device, not the Garmin phone app</b>, or
-        the coordinates can be stripped.</li>
+        address, and send. The coordinates travel inside the message text,
+        so it works from the inReach itself or from the Garmin app.</li>
       <li>Wait. Ten to twenty minutes is normal. The reply arrives as 2 to 4
         messages of coded letters.</li>
     </ol>
@@ -187,7 +186,8 @@ kbd{font:600 13px var(--mono);background:#fff;border:1px solid var(--rule);
       <li>Copy each reply message. On the inReach, read them off the screen
         into the box if pairing is being difficult.</li>
       <li>Open the <b>Decode</b> tab and paste all of them into the box.
-        Any order, extra spaces and line breaks are fine.</li>
+        Any order. Line breaks, spaces, or all of them run together in one
+        blob all work.</li>
       <li>Tap <b>Read forecast</b>.</li>
     </ol>
     <p>If it says a part is missing, one message has not arrived yet or you
@@ -294,11 +294,12 @@ function render(){
     'accurate to about ' + Math.round(f.acc) + ' m' +
     (f.alt != null ? ' &middot; GPS elevation ' + Math.round(f.alt) + ' m' : '');
   $('reqText').textContent =
-    'WX ' + f.lat.toFixed(4) + ' ' + f.lon.toFixed(4) + KEYWORD[model];
+    'WX ' + f.lat.toFixed(4) + ' ' + f.lon.toFixed(4) + KEYWORD[model] +
+    (channel === 'sat' ? ' sat' : ' ir');
   const dest = $('dest').value.trim() || 'your wx address';
   $('sendHelp').textContent = channel === 'ir'
-    ? 'Paste into a new inReach message to ' + dest +
-      '. Send from the device, not the phone app. Reply comes as 2 messages.'
+    ? 'Send to ' + dest + ' from the inReach or the Garmin app. ' +
+      'Reply comes back as 2 messages.'
     : 'Paste into Messages to ' + dest +
       '. Point at the sky and send. Reply comes as up to 4 texts.';
 }

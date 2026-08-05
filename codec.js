@@ -42,23 +42,81 @@ function bitsToBytes(bits) {
 // ---- multipart -----------------------------------------------------------
 // The first character of each part encodes (index, total): ALPHABET[idx*8+total].
 function joinParts(text) {
-  const tokens = (text || "").replace(/,/g, " ").split(/\s+/)
+  // First try the input as given. If that leaves gaps, the parts were probably
+  // pasted in mixed groupings, so retry with all whitespace removed.
+  try {
+    return joinPartsOnce(text);
+  } catch (e) {
+    const glued = (text || "").split("").filter(c => ALPHABET.includes(c)).join("");
+    if (glued.length && glued !== (text || "").trim()) {
+      try { return joinPartsOnce(glued); } catch (e2) { throw e; }
+    }
+    throw e;
+  }
+}
+
+function joinPartsOnce(text) {
+  // Parts may arrive separated by whitespace, or pasted end to end as one
+  // blob. Whitespace separation is the reliable case; for a single blob we
+  // rely on every part except the last being exactly the same length.
+  const chunks = (text || "").replace(/,/g, " ").split(/\s+/)
     .map(t => t.split("").filter(c => ALPHABET.includes(c)).join(""))
     .filter(t => t.length > 0);
-  if (!tokens.length) throw new Error("Nothing to decode. Paste the reply first.");
+  if (!chunks.length) throw new Error("Nothing to decode. Paste the reply first.");
+
+  const marker = t => {
+    const v = ALPHABET.indexOf(t[0]);
+    return { idx: Math.floor(v / 8), total: v % 8 };
+  };
+
+  let tokens = [];
+  for (const c of chunks) {
+    const m = marker(c);
+    if (m.total === 0 || m.idx >= m.total) {
+      throw new Error("This does not look like a WendlingWx message. " +
+        "Copy the reply messages exactly as they arrived.");
+    }
+    // A single chunk holding every part pasted end to end. Parts 1..n-1 are
+    // all the same full length and only the last is short, so try each
+    // plausible full-part size and keep the split whose markers all check out.
+    if (m.total > 1) {
+      let split = null;
+      const maxSize = c.length;
+      for (let size = Math.ceil(c.length / m.total); size <= maxSize; size++) {
+        // n-1 full parts of `size`, plus a final remainder of 1..size
+        const tail = c.length - size * (m.total - 1);
+        if (tail < 1 || tail > size) continue;
+        const guess = [];
+        for (let i = 0; i < m.total - 1; i++) guess.push(c.slice(i * size, (i + 1) * size));
+        guess.push(c.slice(size * (m.total - 1)));
+        const idxs = new Set();
+        const ok = guess.every(g => {
+          if (!g.length) return false;
+          const gm = marker(g);
+          if (gm.total !== m.total || gm.idx >= m.total || idxs.has(gm.idx)) return false;
+          idxs.add(gm.idx);
+          return true;
+        });
+        if (ok && idxs.size === m.total) { split = guess; break; }
+      }
+      if (split) { tokens = tokens.concat(split); continue; }
+    }
+    tokens.push(c);
+  }
 
   const seen = {};
   let total = null;
   for (const t of tokens) {
-    const v = ALPHABET.indexOf(t[0]);
-    const idx = Math.floor(v / 8), tot = v % 8;
-    if (tot === 0 || idx >= tot) {
-      throw new Error("This does not look like a WendlingWx message.");
+    const m = marker(t);
+    if (m.total === 0 || m.idx >= m.total) {
+      throw new Error("This does not look like a WendlingWx message. " +
+        "Copy the reply messages exactly as they arrived.");
     }
-    if (total === null) total = tot;
-    if (tot !== total) throw new Error("These parts came from different forecasts.");
-    seen[idx] = t.slice(1);
+    if (total === null) total = m.total;
+    if (m.total !== total) throw new Error("These parts came from different forecasts.");
+    seen[m.idx] = t.slice(1);
   }
+
   const missing = [];
   for (let i = 0; i < total; i++) if (!(i in seen)) missing.push(i + 1);
   if (missing.length) {
@@ -69,6 +127,7 @@ function joinParts(text) {
   for (let i = 0; i < total; i++) out += seen[i];
   return out;
 }
+
 
 // ---- decode --------------------------------------------------------------
 function decode(text) {

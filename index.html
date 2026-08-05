@@ -79,6 +79,8 @@ button.act:disabled{background:var(--graphite)}
 #help ol{padding-left:22px}
 #help li{margin:6px 0}
 #help .warn{border-left:5px solid var(--alarm);background:#fff;padding:10px 14px;margin:14px 0}
+#help .credits, #help .credits li{font-size:14px;color:var(--graphite)}
+#help .credits b{color:var(--ink)}
 kbd{font:600 13px var(--mono);background:#fff;border:1px solid var(--rule);
   border-radius:3px;padding:1px 5px}
 </style>
@@ -95,13 +97,14 @@ kbd{font:600 13px var(--mono);background:#fff;border:1px solid var(--rule);
 
   <!-- ------------------------------------------------ request -->
   <section id="req">
-    <label>Channel</label>
+    <label>Reply length</label>
     <div class="seg">
-      <button id="ch-ir" aria-pressed="true" onclick="setChannel('ir')">
-        inReach<small>2 msgs &middot; more detail</small></button>
-      <button id="ch-sat" aria-pressed="false" onclick="setChannel('sat')">
-        iPhone sat text<small>4 msgs &middot; most detail</small></button>
+      <button id="sz-brief" aria-pressed="true" onclick="setSize('brief')">
+        Condensed<small>2 messages</small></button>
+      <button id="sz-full" aria-pressed="false" onclick="setSize('full')">
+        Full<small>4 messages</small></button>
     </div>
+    <p class="note" id="sizeHelp"></p>
 
     <label>Forecast</label>
     <div class="seg">
@@ -113,9 +116,6 @@ kbd{font:600 13px var(--mono);background:#fff;border:1px solid var(--rule);
         5 day<small>NWS grids</small></button>
     </div>
     <p class="note" id="modelHelp"></p>
-
-    <label for="dest">Send to</label>
-    <input id="dest" placeholder="wx address or number" oninput="saveDest()">
 
     <button class="act" onclick="locate()" id="locBtn">Use my location</button>
     <p class="err" id="locErr" hidden></p>
@@ -153,8 +153,6 @@ kbd{font:600 13px var(--mono);background:#fff;border:1px solid var(--rule);
     <ol>
       <li>Open this app in airplane mode. If it does not load, open it once
         with signal and test again. Do not leave until it loads offline.</li>
-      <li>Confirm the <b>Send to</b> address is filled in on the Request tab.
-        It is saved on the phone, per channel.</li>
       <li>inReach: save the wx address as a contact, on the device or in
         the Garmin app, whichever you send from.</li>
       <li>iPhone satellite: exchange one message with the wx number while you
@@ -166,8 +164,10 @@ kbd{font:600 13px var(--mono);background:#fff;border:1px solid var(--rule);
 
     <h2>Requesting a forecast in the field</h2>
     <ol>
-      <li>Pick your channel. <b>inReach</b> replies fit in 2 messages.
-        <b>iPhone sat text</b> replies use 4, with room for more detail.</li>
+      <li>Pick the reply length. <b>Condensed</b> comes back as 2 messages
+        with coarser time steps. <b>Full</b> uses 4 messages for twice the
+        detail. On inReach, each message counts against your plan, so
+        Condensed is the cheaper habit.</li>
       <li>Pick the forecast. <b>48 h HRRR-AK</b> is the sharpest short range
         model for Alaska terrain. <b>5 day</b> keeps HRRR for the first two
         days and adds a coarser global model beyond. <b>5 day NWS</b> uses
@@ -177,14 +177,13 @@ kbd{font:600 13px var(--mono);background:#fff;border:1px solid var(--rule);
       <li>Tap <b>Copy message</b>, paste it into a new message to your wx
         address, and send. The coordinates travel inside the message text,
         so it works from the inReach itself or from the Garmin app.</li>
-      <li>Wait. Ten to twenty minutes is normal. The reply arrives as 2 to 4
-        messages of coded letters.</li>
+      <li>Wait. Ten to twenty minutes is normal. The reply arrives as 2 or
+        4 messages of coded letters, depending on the length you picked.</li>
     </ol>
 
     <h2>Reading the reply</h2>
     <ol>
-      <li>Copy each reply message. On the inReach, read them off the screen
-        into the box if pairing is being difficult.</li>
+      <li>Copy each reply message.</li>
       <li>Open the <b>Decode</b> tab and paste all of them into the box.
         Any order. Line breaks, spaces, or all of them run together in one
         blob all work.</li>
@@ -222,6 +221,27 @@ kbd{font:600 13px var(--mono);background:#fff;border:1px solid var(--rule);
     wrong sometimes, especially in valleys during inversions. Never bet a
     river crossing, a flight, or an exposed ridge on a single forecast from
     anything, including this.</div>
+
+    <h2>Credits</h2>
+    <p class="credits">Built by <b>Logan Wendling</b>.</p>
+    <p class="credits">Forecast data comes from public sources, free of
+    charge:</p>
+    <ul class="credits">
+      <li><b>NOAA / NCEP HRRR-AK</b>, the 3 km High-Resolution Rapid Refresh
+        Alaska model, for the first 48 hours. Retrieved from the NOAA Open
+        Data Dissemination archive on AWS.</li>
+      <li><b>Open-Meteo</b>, blending global models including NOAA GFS and
+        DWD ICON, for days 3 through 5.</li>
+      <li><b>NOAA National Weather Service</b> forecast grids, adjusted by
+        Alaska forecasters, for the NWS option.</li>
+      <li><b>Copernicus GLO-90</b> elevation data, via Open-Meteo, for the
+        ground elevation used to correct temperatures to your actual
+        height.</li>
+    </ul>
+    <p class="credits">Model data is downloaded and packed by
+    <b>Herbie</b> and <b>pygrib</b>. None of these organisations endorse or
+    have any involvement with this tool, and any errors in the forecast you
+    see here are this tool's, not theirs.</p>
   </section>
 </main>
 
@@ -232,8 +252,8 @@ const store = {
   get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
   set(k,v){ try { localStorage.setItem(k,v); } catch(e){} }
 };
-let channel = store.get('channel') || 'ir';
 let model = store.get('model') || 'hrrr';
+let size = store.get('size') || 'brief';
 let fixData = null;
 
 const MODEL_HELP = {
@@ -245,6 +265,10 @@ const MODEL_HELP = {
         'no ridge winds.',
 };
 const KEYWORD = { hrrr: '', '5day': ' 5day', nws: ' nws' };
+const SIZE_HELP = {
+  brief: 'Fewer, coarser time steps. Cheapest on inReach message quota.',
+  full: 'Twice the time steps. Costs 4 messages each way.',
+};
 
 function show(which){
   ['req','dec','help'].forEach(id => {
@@ -254,13 +278,14 @@ function show(which){
   });
 }
 
-function setChannel(c){
-  channel = c; store.set('channel', c);
-  $('ch-ir').setAttribute('aria-pressed', c === 'ir');
-  $('ch-sat').setAttribute('aria-pressed', c === 'sat');
-  $('dest').value = store.get('dest-' + c) || '';
+function setSize(v){
+  size = v; store.set('size', v);
+  $('sz-brief').setAttribute('aria-pressed', v === 'brief');
+  $('sz-full').setAttribute('aria-pressed', v === 'full');
+  $('sizeHelp').textContent = SIZE_HELP[v];
   if (fixData) render();
 }
+
 function setModel(m){
   model = m; store.set('model', m);
   ['hrrr','5day','nws'].forEach(x =>
@@ -268,7 +293,6 @@ function setModel(m){
   $('modelHelp').textContent = MODEL_HELP[m];
   if (fixData) render();
 }
-function saveDest(){ store.set('dest-' + channel, $('dest').value.trim()); }
 
 function locate(){
   const btn = $('locBtn'), err = $('locErr');
@@ -295,13 +319,9 @@ function render(){
     (f.alt != null ? ' &middot; GPS elevation ' + Math.round(f.alt) + ' m' : '');
   $('reqText').textContent =
     'WX ' + f.lat.toFixed(4) + ' ' + f.lon.toFixed(4) + KEYWORD[model] +
-    (channel === 'sat' ? ' sat' : ' ir');
-  const dest = $('dest').value.trim() || 'your wx address';
-  $('sendHelp').textContent = channel === 'ir'
-    ? 'Send to ' + dest + ' from the inReach or the Garmin app. ' +
-      'Reply comes back as 2 messages.'
-    : 'Paste into Messages to ' + dest +
-      '. Point at the sky and send. Reply comes as up to 4 texts.';
+    (size === 'brief' ? ' brief' : '');
+  $('sendHelp').textContent = 'Send this to your wx address. The reply comes ' +
+    'back as ' + (size === 'brief' ? '2 messages.' : 'up to 4 messages.');
 }
 
 async function copy(text, btn){
@@ -428,7 +448,7 @@ function fmt(d){
   return d.toLocaleString([], { weekday:'short', hour:'2-digit', minute:'2-digit' });
 }
 
-setChannel(channel);
+setSize(size);
 setModel(model);
 if ('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(() => {});

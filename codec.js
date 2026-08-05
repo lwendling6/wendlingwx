@@ -42,23 +42,20 @@ function bitsToBytes(bits) {
 // ---- multipart -----------------------------------------------------------
 // The first character of each part encodes (index, total): ALPHABET[idx*8+total].
 function joinParts(text) {
-  // First try the input as given. If that leaves gaps, the parts were probably
-  // pasted in mixed groupings, so retry with all whitespace removed.
-  try {
-    return joinPartsOnce(text);
-  } catch (e) {
-    const glued = (text || "").split("").filter(c => ALPHABET.includes(c)).join("");
-    if (glued.length && glued !== (text || "").trim()) {
-      try { return joinPartsOnce(glued); } catch (e2) { throw e; }
-    }
-    throw e;
-  }
+  // Returns the first candidate; decode() tries them all and lets the
+  // checksum pick the right one.
+  return joinCandidates(text)[0];
 }
 
-function joinPartsOnce(text) {
-  // Parts may arrive separated by whitespace, or pasted end to end as one
-  // blob. Whitespace separation is the reliable case; for a single blob we
-  // rely on every part except the last being exactly the same length.
+/**
+ * Build every plausible reassembly of the pasted text, best guess first.
+ *
+ * Two shapes have to work: parts separated by whitespace (the normal case),
+ * and parts pasted end to end as one blob. They are ambiguous on their own,
+ * because payload characters look exactly like part markers, so we generate
+ * candidates and let the CRC in decode() decide.
+ */
+function joinCandidates(text) {
   const chunks = (text || "").replace(/,/g, " ").split(/\s+/)
     .map(t => t.split("").filter(c => ALPHABET.includes(c)).join(""))
     .filter(t => t.length > 0);
@@ -68,70 +65,73 @@ function joinPartsOnce(text) {
     const v = ALPHABET.indexOf(t[0]);
     return { idx: Math.floor(v / 8), total: v % 8 };
   };
+  const first = marker(chunks[0]);
+  if (first.total === 0 || first.idx >= first.total) {
+    throw new Error("This does not look like a WendlingWx message. " +
+      "Copy the reply messages exactly as they arrived.");
+  }
+  const total = first.total;
+  const candidates = [];
 
-  let tokens = [];
-  for (const c of chunks) {
-    const m = marker(c);
-    if (m.total === 0 || m.idx >= m.total) {
-      throw new Error("This does not look like a WendlingWx message. " +
-        "Copy the reply messages exactly as they arrived.");
+  // Candidate 1: one chunk per part. Correct whenever the parts arrived on
+  // separate lines, which is what happens when each is its own message.
+  const assemble = pieces => {
+    const seen = {};
+    for (const p of pieces) {
+      const m = marker(p);
+      if (m.total !== total || m.idx >= total || (m.idx in seen)) return null;
+      seen[m.idx] = p.slice(1);
     }
-    // A single chunk holding every part pasted end to end. Parts 1..n-1 are
-    // all the same full length and only the last is short, so try each
-    // plausible full-part size and keep the split whose markers all check out.
-    if (m.total > 1) {
-      let split = null;
-      const maxSize = c.length;
-      for (let size = Math.ceil(c.length / m.total); size <= maxSize; size++) {
-        // n-1 full parts of `size`, plus a final remainder of 1..size
-        const tail = c.length - size * (m.total - 1);
-        if (tail < 1 || tail > size) continue;
-        const guess = [];
-        for (let i = 0; i < m.total - 1; i++) guess.push(c.slice(i * size, (i + 1) * size));
-        guess.push(c.slice(size * (m.total - 1)));
-        const idxs = new Set();
-        const ok = guess.every(g => {
-          if (!g.length) return false;
-          const gm = marker(g);
-          if (gm.total !== m.total || gm.idx >= m.total || idxs.has(gm.idx)) return false;
-          idxs.add(gm.idx);
-          return true;
-        });
-        if (ok && idxs.size === m.total) { split = guess; break; }
-      }
-      if (split) { tokens = tokens.concat(split); continue; }
+    if (Object.keys(seen).length !== total) return null;
+    let out = "";
+    for (let i = 0; i < total; i++) out += seen[i];
+    return out;
+  };
+  const direct = assemble(chunks);
+  if (direct !== null) candidates.push(direct);
+
+  // Candidate 2+: the whole thing is one blob with the parts run together.
+  // Parts 1..n-1 are all the same length, so try each plausible full size.
+  if (total > 1) {
+    const blob = chunks.join("");
+    for (let size = Math.ceil(blob.length / total); size < blob.length; size++) {
+      const tail = blob.length - size * (total - 1);
+      if (tail < 1 || tail > size) continue;
+      const pieces = [];
+      for (let i = 0; i < total - 1; i++) pieces.push(blob.slice(i * size, (i + 1) * size));
+      pieces.push(blob.slice(size * (total - 1)));
+      const joined = assemble(pieces);
+      if (joined !== null && candidates.indexOf(joined) === -1) candidates.push(joined);
     }
-    tokens.push(c);
   }
 
-  const seen = {};
-  let total = null;
-  for (const t of tokens) {
-    const m = marker(t);
-    if (m.total === 0 || m.idx >= m.total) {
-      throw new Error("This does not look like a WendlingWx message. " +
-        "Copy the reply messages exactly as they arrived.");
+  if (!candidates.length) {
+    const seen = {};
+    for (const c of chunks) {
+      const m = marker(c);
+      if (m.total === total && m.idx < total) seen[m.idx] = true;
     }
-    if (total === null) total = m.total;
-    if (m.total !== total) throw new Error("These parts came from different forecasts.");
-    seen[m.idx] = t.slice(1);
+    const missing = [];
+    for (let i = 0; i < total; i++) if (!(i in seen)) missing.push(i + 1);
+    throw new Error(missing.length
+      ? "Missing part " + missing.join(", ") + " of " + total +
+        ". Paste every message you received, in any order."
+      : "Could not reassemble the message. Re-copy each reply and paste again.");
   }
-
-  const missing = [];
-  for (let i = 0; i < total; i++) if (!(i in seen)) missing.push(i + 1);
-  if (missing.length) {
-    throw new Error("Missing part " + missing.join(", ") + " of " + total +
-      ". Paste every message you received, in any order.");
-  }
-  let out = "";
-  for (let i = 0; i < total; i++) out += seen[i];
-  return out;
+  return candidates;
 }
-
 
 // ---- decode --------------------------------------------------------------
 function decode(text) {
-  const code = joinParts(text);
+  const candidates = joinCandidates(text);
+  let lastErr = null;
+  for (const code of candidates) {
+    try { return decodeCode(code); } catch (e) { lastErr = e; }
+  }
+  throw lastErr;
+}
+
+function decodeCode(code) {
   const bits = [];
   for (const ch of code) {
     const v = ALPHABET.indexOf(ch);

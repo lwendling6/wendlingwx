@@ -1,804 +1,662 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="day">
+<!doctype html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>WendlingWx</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0B3B45">
+<meta name="theme-color" content="#0E1416">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
 :root{
-  --paper:#F2F5F3; --panel:#FFFFFF; --panel2:#E8EEEB; --ink:#0D1412;
-  --graphite:#5C6B66; --rule:#C2CFC9; --glacier:#0B5F73; --spruce:#2F5540;
-  --snow:#3D3F8F; --alarm:#9E2B15; --warn:#8B5A00; --shadow:0 1px 0 rgba(13,20,18,.08);
+  --bg:#0E1416; --panel:#151D20; --panel2:#1B2528; --ink:#E8EFF0;
+  --dim:#7C8E92; --edge:#233034;
+  --amber:#E2A03F; --ice:#4FB6D8; --violet:#8C8CE0; --red:#E0614A; --green:#5FBF8B;
   --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
   --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
 }
-html[data-theme="night"]{
-  --paper:#101614; --panel:#17201D; --panel2:#202C28; --ink:#EDF4F1;
-  --graphite:#A8B6B0; --rule:#42524C; --glacier:#79C6D6; --spruce:#84B89A;
-  --snow:#A8AEFF; --alarm:#FF8E78; --warn:#F2C06B; --shadow:none;
-}
 *{box-sizing:border-box}
-[hidden]{display:none!important}
-body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
-  font-size:17px;line-height:1.42;-webkit-text-size-adjust:100%;
-  padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
-main{max-width:680px;margin:0 auto;padding:14px 14px 72px}
-button,input,textarea{font:inherit}
-button{touch-action:manipulation}
-.brandRow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:5px 0 16px}
-h1{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;
-  margin:0;color:var(--glacier);font-weight:800;white-space:nowrap}
-h1 span{color:var(--graphite)}
-.prefs{display:flex;gap:6px}
-.prefs button,.miniBtn{border:1.5px solid var(--rule);background:var(--panel);color:var(--ink);
-  border-radius:4px;padding:7px 9px;font:700 11px var(--mono);cursor:pointer}
-.tabs{display:flex;border:2px solid var(--ink);border-radius:4px;margin-bottom:20px;overflow:hidden}
-.tabs button{flex:1;padding:13px 4px;background:none;border:0;font:700 15px var(--sans);
-  color:var(--ink);cursor:pointer}
-.tabs button[aria-selected=true]{background:var(--ink);color:var(--paper)}
-.seg{display:flex;gap:8px;margin:0 0 12px}
-.seg button{flex:1;padding:12px 4px;border:2px solid var(--rule);background:var(--panel);
-  border-radius:4px;font:700 14px var(--sans);color:var(--graphite);cursor:pointer}
-.seg button[aria-pressed=true]{border-color:var(--glacier);color:var(--glacier);
-  background:color-mix(in srgb,var(--glacier) 8%,var(--panel))}
-.seg button small{display:block;font:400 11px var(--mono);margin-top:2px}
-label,.eyebrow{display:block;font:700 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;
-  color:var(--graphite);margin:18px 0 6px}
-input,textarea{width:100%;padding:12px;border:2px solid var(--rule);border-radius:4px;
-  font:15px var(--mono);background:var(--panel);color:var(--ink)}
-textarea{min-height:125px;resize:vertical;word-break:break-all}
-button.act{width:100%;padding:15px;margin-top:12px;border:0;border-radius:4px;
-  background:var(--ink);color:var(--paper);font:800 16px var(--sans);cursor:pointer}
-button.act.secondary{background:var(--glacier);color:#fff}
-button.act.ghost{background:var(--panel);color:var(--ink);border:2px solid var(--ink)}
-button.act:disabled{background:var(--graphite)}
-.actionPair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-:focus-visible{outline:3px solid var(--glacier);outline-offset:2px}
-.note{font-size:14px;color:var(--graphite);margin:9px 0 0}
-.err{color:var(--alarm);font-weight:700;margin-top:12px}
-.out{margin-top:16px;padding:14px;border:2px solid var(--ink);border-radius:4px;
-  background:var(--panel);font:16px var(--mono);word-break:break-all}
-.lastCard{margin:14px 0;padding:12px 14px;background:var(--panel);border:1.5px solid var(--rule);
-  border-radius:5px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.lastCard b{display:block;font:750 14px var(--sans)}
-.lastCard small{color:var(--graphite);font:12px var(--mono)}
-.lastCard .miniBtn{flex:0 0 auto}
-.reportMeta{font:12px var(--mono);color:var(--graphite);line-height:1.65;margin:18px 0 10px}
-.reportMeta b{color:var(--ink)}
-.stale{margin:10px 0;padding:10px 12px;border-left:5px solid var(--warn);background:var(--panel);
-  color:var(--ink);font-size:14px}
-.summaryCard{background:var(--panel);border:2px solid var(--ink);border-radius:5px;padding:14px;
-  box-shadow:var(--shadow);margin-bottom:12px}
-.summaryTitle{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:10px}
-.summaryTitle h2{font:800 14px var(--mono);letter-spacing:.1em;text-transform:uppercase;margin:0}
-.summaryTitle small{font:11px var(--mono);color:var(--graphite)}
-.summaryGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.metric{padding:10px;background:var(--panel2);border-radius:4px;min-height:76px}
-.metric span{display:block;font:700 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--graphite)}
-.metric b{display:block;font:800 18px var(--sans);line-height:1.15;margin-top:4px}
-.metric small{display:block;font:12px var(--sans);color:var(--graphite);margin-top:4px;line-height:1.25}
-.alert{margin-top:10px;padding:10px 12px;border-left:5px solid var(--glacier);background:var(--panel2);
-  font-size:14px;line-height:1.35}
-.alert.warn{border-color:var(--alarm)}
-.levelBanner{margin:12px 0;padding:11px 13px;border-left:5px solid var(--glacier);
-  background:var(--panel);font-size:14px}
-.levelBanner.below{border-color:var(--alarm)}
-.levelBanner b{font-family:var(--mono)}
-.day{border-top:2px solid var(--ink);margin-top:18px}
-.day summary{list-style:none;cursor:pointer;padding:12px 0 10px}
-.day summary::-webkit-details-marker{display:none}
-.dayHead{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
-.dayName{font:800 14px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--glacier)}
-.dayTotals{font:700 12px var(--mono);color:var(--ink);text-align:right}
-.daySources{font:11px var(--mono);color:var(--graphite);margin-top:4px}
-.chev{display:inline-block;margin-left:5px;color:var(--graphite)}
-.day[open] .chev{transform:rotate(90deg)}
-.wxrow{display:grid;grid-template-columns:62px 58px 1fr;gap:7px;align-items:start;
-  padding:11px 0;border-bottom:1px solid var(--rule)}
-.wxTime{font:700 13px var(--mono);color:var(--graphite);padding-top:3px}
-.wxTemp{font:850 22px var(--sans);line-height:1.05}
-.wxMain{min-width:0}
-.wxWind{font:750 14px var(--mono);line-height:1.25}
-.windArrow{display:inline-block;width:20px;text-align:center;color:var(--glacier);font-size:17px}
-.gust{color:var(--alarm)}
-.wxLine{font-size:13px;color:var(--ink);margin-top:4px;line-height:1.3}
-.wxSub{font:11px var(--mono);color:var(--graphite);margin-top:4px;line-height:1.35}
-.pill{display:inline-block;padding:2px 5px;border-radius:3px;background:var(--panel2);margin-right:4px}
-.pill.rain{color:var(--glacier)}
-.pill.snow{color:var(--snow)}
-.pill.mixed{color:var(--snow)}
-.sourceBreak{font:700 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;
-  color:var(--graphite);padding:7px 0 1px}
-.footerStats{margin-top:16px;padding:12px 0;border-top:1px solid var(--rule);
-  font:12px var(--mono);color:var(--graphite);line-height:1.7}
-.footerStats b{color:var(--ink)}
-.legend{font:11px var(--mono);color:var(--graphite);margin-top:10px;line-height:1.55}
-#help h2{font:800 15px var(--sans);margin:22px 0 6px}
-#help p,#help li{font-size:15px;color:var(--ink)}
-#help ol{padding-left:22px}
-#help li{margin:6px 0}
-.helpTable{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
-.helpTable th,.helpTable td{border:1px solid var(--rule);padding:5px 6px;text-align:left}
-.helpTable th{background:rgba(11,95,115,.07);font-weight:700}
-.wxIcon{display:block;width:26px;height:26px;margin:2px auto 0}
-.msgBox{margin-bottom:10px}
-.msgBox label{margin:0 0 4px}
-.msgBox textarea{min-height:52px;font-size:13px}
-#help .warn{border-left:5px solid var(--alarm);background:var(--panel);padding:10px 14px;margin:14px 0}
-#help .credits,#help .credits li{font-size:14px;color:var(--graphite)}
-#help .credits b{color:var(--ink)}
-@media(max-width:420px){
-  main{padding-left:12px;padding-right:12px}
-  .summaryGrid{grid-template-columns:1fr 1fr}
-  .metric{padding:9px;min-height:72px}
-  .metric b{font-size:17px}
-  .wxrow{grid-template-columns:52px 52px 1fr;gap:6px}
-  .wxTemp{font-size:20px}
-}
-@media(max-width:350px){
-  .summaryGrid{grid-template-columns:1fr}
-  .actionPair{grid-template-columns:1fr}
-}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--mono);
+  -webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;
+  padding:env(safe-area-inset-top) 0 92px}
+.wrap{max-width:620px;margin:0 auto;padding:14px 12px 0}
+header{display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--edge);padding-bottom:11px;margin-bottom:14px}
+.hl{font:800 13px var(--mono);letter-spacing:.2em;color:var(--ice)}
+.hr{font:11px var(--mono);color:var(--dim);display:flex;gap:7px;align-items:center}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+.panel{background:var(--panel);border:1px solid var(--edge);border-radius:4px;
+  padding:14px;margin-bottom:10px}
+.plabel{font:700 10px var(--mono);letter-spacing:.18em;color:var(--dim);
+  text-transform:uppercase;margin:0 0 10px;display:flex;justify-content:space-between;gap:10px}
+.plabel span{text-transform:none;letter-spacing:.04em;text-align:right}
+:focus-visible{outline:2px solid var(--ice);outline-offset:2px}
+.sw{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--edge);
+  border:1px solid var(--edge);margin-bottom:8px}
+.sw button{border:0;background:var(--panel2);color:var(--dim);padding:12px 4px;
+  cursor:pointer;font-family:var(--mono)}
+.sw button b{display:block;font-size:13px;letter-spacing:.04em}
+.sw button i{display:block;font-style:normal;font-size:10px;margin-top:3px;opacity:.75}
+.sw button.on{background:var(--ice);color:#06171E}
+.detail{border-left:2px solid var(--ice);background:var(--panel2);padding:9px 11px;
+  font-size:11.5px;line-height:1.6;margin-bottom:16px}
+.detail b{color:var(--ice);letter-spacing:.04em}
+.detail .aloft{color:var(--dim)}
+.mrow{display:grid;grid-template-columns:16px 1fr;gap:10px;align-items:start;width:100%;
+  background:var(--panel2);border:1px solid var(--edge);color:var(--ink);padding:12px;
+  margin-bottom:6px;cursor:pointer;text-align:left;font-family:var(--mono)}
+.mrow .led{width:10px;height:10px;border-radius:50%;border:1px solid var(--dim);margin-top:2px}
+.mrow.on{border-color:var(--ice)}
+.mrow.on .led{background:var(--ice);border-color:var(--ice);box-shadow:0 0 8px var(--ice)}
+.mrow b{display:block;font-size:13px;letter-spacing:.03em}
+.mrow .d{display:block;font-size:11px;color:var(--dim);margin-top:3px;
+  font-family:var(--sans);line-height:1.45}
+.mrow .res{display:block;font-size:10.5px;color:var(--ice);margin-top:5px}
+.mrow[disabled]{opacity:.3;cursor:not-allowed}
+.mrow[disabled] .res{color:var(--dim)}
+.readout{display:grid;grid-template-columns:1fr auto;gap:8px;border-top:1px solid var(--edge);
+  padding-top:12px;margin-top:6px}
+.readout .k{font-size:10px;color:var(--dim);letter-spacing:.14em}
+.readout .v{font-size:13px;margin-top:3px}
+.readout .rr{text-align:right;color:var(--ice);font-size:11px;line-height:1.6}
+.exec{width:100%;border:0;background:var(--ice);color:#06171E;font:800 14px var(--mono);
+  letter-spacing:.1em;padding:15px;margin-top:12px;cursor:pointer;text-transform:uppercase}
+.exec:disabled{opacity:.5}
+.alt{width:100%;border:1px solid var(--edge);background:none;color:var(--dim);
+  font:11px var(--mono);letter-spacing:.1em;padding:11px;margin-top:6px;cursor:pointer;
+  text-transform:uppercase}
+.out{margin-top:12px;padding:11px;border:1px dashed var(--edge);background:var(--bg);
+  font-size:13px;word-break:break-all;color:var(--amber);line-height:1.5}
+.err{color:var(--red);font-size:12px;margin-top:10px;line-height:1.5;font-family:var(--sans)}
+.fixmeta{font-size:11px;color:var(--dim);margin-top:10px;line-height:1.6}
+.hdr{font-size:11px;color:var(--dim);line-height:1.7;margin-bottom:10px}
+.hdr b{color:var(--ink)}
+.flag{border-left:3px solid var(--amber);background:var(--panel2);padding:9px 11px;
+  font-size:11.5px;margin-bottom:8px;line-height:1.5}
+.flag.ice{border-left-color:var(--ice)}
+.flag.red{border-left-color:var(--red)}
+.spark{display:block;width:100%;height:62px;margin:8px 0 4px}
+.chartBox{position:relative;border:1px solid var(--edge);background:var(--panel);
+  overflow:hidden;margin-bottom:10px}
+.scroller{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
+table.ch{border-collapse:separate;border-spacing:0;font-family:var(--mono);white-space:nowrap}
+table.ch th.rl{position:sticky;left:0;z-index:3;background:var(--panel2);
+  border-right:1px solid var(--edge);border-bottom:1px solid var(--edge);
+  font:700 9.5px var(--mono);letter-spacing:.08em;color:var(--dim);text-transform:uppercase;
+  text-align:left;padding:0 8px;width:74px;min-width:74px}
+table.ch td{border-bottom:1px solid var(--edge);border-right:1px solid rgba(35,48,52,.55);
+  text-align:center;padding:0;width:54px;min-width:54px;font-size:12px;height:30px}
+table.ch tr.day td{background:var(--panel2);font:700 9.5px var(--mono);letter-spacing:.12em;
+  color:var(--ice);text-align:left;padding-left:7px;height:24px}
+table.ch tr.hour td{color:var(--dim);font-size:11px}
+table.ch tr.sky td{height:36px}
+table.ch tr.temp td{font-size:15px;font-weight:700}
+table.ch .ar{color:var(--ice);display:inline-block;font-size:11px}
+table.ch tr.gust td{color:var(--red)}
+table.ch tr.pcp td{color:var(--ice)}
+table.ch tr.pcp td.snow{color:var(--violet)}
+table.ch tr.frz td, table.ch tr.aloft td{color:var(--dim);font-size:11px}
+table.ch td.zero, table.ch .zero{color:#3F4C50}
+table.ch td.newsrc{border-left:2px solid var(--amber)}
+.ci{width:22px;height:22px;vertical-align:middle}
+.hint{font:10px var(--mono);color:var(--dim);letter-spacing:.08em;text-transform:uppercase;
+  padding:7px 10px;border-top:1px solid var(--edge);display:flex;justify-content:space-between;gap:8px}
+.box{margin-bottom:9px}
+.box label{display:block;font:700 10px var(--mono);letter-spacing:.14em;color:var(--dim);
+  margin-bottom:4px;text-transform:uppercase}
+.box textarea{width:100%;min-height:52px;background:var(--bg);border:1px solid var(--edge);
+  color:var(--amber);font:12px var(--mono);padding:9px;resize:vertical}
+.box textarea:focus{outline:0;border-color:var(--ice)}
+.help h3{font:700 11px var(--mono);letter-spacing:.16em;color:var(--ice);
+  text-transform:uppercase;margin:20px 0 8px;border-bottom:1px solid var(--edge);padding-bottom:5px}
+.help h3:first-child{margin-top:0}
+.help p,.help li{font-family:var(--sans);font-size:13.5px;line-height:1.55}
+.help p{margin:0 0 10px}
+.help ol{padding-left:20px;margin:0 0 10px}
+.help li{margin:5px 0}
+.help .k{color:var(--dim)}
+.htab{width:100%;border-collapse:collapse;font:11px var(--mono);margin:8px 0 12px}
+.htab th,.htab td{border:1px solid var(--edge);padding:6px;text-align:left;vertical-align:top}
+.htab th{background:var(--panel2);color:var(--ice);letter-spacing:.06em}
+.warnbox{border-left:3px solid var(--red);background:var(--panel2);padding:11px 12px;
+  font-family:var(--sans);font-size:13px;line-height:1.5;margin:14px 0}
+nav{position:fixed;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(4,1fr);
+  background:var(--panel);border-top:1px solid var(--edge);
+  padding-bottom:env(safe-area-inset-bottom);z-index:20}
+nav button{border:0;background:none;color:var(--dim);padding:14px 2px;cursor:pointer;
+  font:700 10.5px var(--mono);letter-spacing:.1em;text-transform:uppercase}
+nav button.on{color:var(--ice);box-shadow:inset 0 2px 0 var(--ice)}
 </style>
 </head>
 <body>
-<main>
-  <div class="brandRow">
-    <h1>WendlingWx <span>/ field forecast</span></h1>
-    <div class="prefs">
-      <button id="unitBtn" onclick="toggleUnits()" aria-label="Change units">US</button>
-      <button id="themeBtn" onclick="toggleTheme()" aria-label="Change display theme">Night</button>
-    </div>
-  </div>
-
-  <div class="tabs" role="tablist">
-    <button role="tab" id="tab-req" aria-selected="true" onclick="show('req')">Request</button>
-    <button role="tab" id="tab-dec" aria-selected="false" onclick="show('dec')">Decode</button>
-    <button role="tab" id="tab-help" aria-selected="false" onclick="show('help')">Help</button>
-  </div>
+<div class="wrap">
+  <header>
+    <div class="hl">WENDLINGWX</div>
+    <div class="hr"><span class="dot"></span> OFFLINE READY</div>
+  </header>
 
   <section id="req">
-    <label>Reply length</label>
-    <div class="seg">
-      <button id="tier-basic" aria-pressed="false" onclick="setTier('basic')">
-        Basic<small>1 msg reply</small></button>
-      <button id="tier-standard" aria-pressed="true" onclick="setTier('standard')">
-        Standard<small>2 msg reply</small></button>
-      <button id="tier-full" aria-pressed="false" onclick="setTier('full')">
-        Full<small>3 msg reply</small></button>
-    </div>
+    <div class="panel">
+      <p class="plabel">Reply detail <span>messages used</span></p>
+      <div class="sw" id="tiers">
+        <button onclick="setTier('basic',this)"><b>BASIC</b><i>1 MSG</i></button>
+        <button onclick="setTier('standard',this)"><b>STANDARD</b><i>2 MSG</i></button>
+        <button onclick="setTier('full',this)"><b>FULL</b><i>3 MSG</i></button>
+      </div>
+      <div class="detail" id="detail"></div>
 
-    <div id="basicOpts" hidden>
-      <div class="seg">
-        <button id="bs-48" aria-pressed="true" onclick="setBasic('basic48')">
-          Cover 2 days<small>every 4 h</small></button>
-        <button id="bs-24" aria-pressed="false" onclick="setBasic('basic24')">
-          Detail 24 h<small>every 2 h</small></button>
+      <p class="plabel">Source <span id="note">select</span></p>
+      <button class="mrow" id="m-hrrr" onclick="setModel(this)">
+        <span class="led"></span>
+        <span><b>HRRR-AK 48H</b>
+          <span class="d">3 km Alaska model. Resolves inlets, gaps and ridges.</span>
+          <span class="res" id="r-hrrr"></span></span></button>
+      <button class="mrow" id="m-5day" onclick="setModel(this)">
+        <span class="led"></span>
+        <span><b>BLEND 5-DAY</b>
+          <span class="d">HRRR-AK through 48 h, then a global model to day 5.</span>
+          <span class="res" id="r-5day"></span></span></button>
+      <button class="mrow" id="m-nws" onclick="setModel(this)">
+        <span class="led"></span>
+        <span><b>NWS 5-DAY</b>
+          <span class="d">Forecaster-adjusted grids, independent of the raw models.</span>
+          <span class="res" id="r-nws"></span></span></button>
+
+      <div class="readout">
+        <div><div class="k">REQUEST</div><div class="v" id="sel"></div></div>
+        <div class="rr" id="est"></div>
+      </div>
+      <button class="exec" id="locBtn" onclick="locate()">&#9673; Use current location</button>
+      <button class="alt" onclick="manual()">Enter coordinates manually</button>
+      <p class="err" id="locErr" hidden></p>
+      <div id="fix" hidden>
+        <div class="out" id="msgOut"></div>
+        <button class="alt" onclick="copyMsg(this)">Copy message</button>
+        <div class="fixmeta" id="fixMeta"></div>
       </div>
     </div>
-    <p class="note" id="tierHelp"></p>
+  </section>
 
-    <label>Forecast</label>
-    <div class="seg">
-      <button id="md-hrrr" aria-pressed="true" onclick="setModel('hrrr')">
-        48 h<small>HRRR-AK</small></button>
-      <button id="md-5day" aria-pressed="false" onclick="setModel('5day')">
-        5 day<small>HRRR + Open-Meteo</small></button>
-      <button id="md-nws" aria-pressed="false" onclick="setModel('nws')">
-        5 day<small>NWS grids</small></button>
+  <section id="fc" hidden>
+    <div class="panel" id="fcEmpty">
+      <p class="plabel">No forecast yet</p>
+      <p style="font-family:var(--sans);font-size:13.5px;color:var(--dim);line-height:1.55;margin:0">
+        Decode a reply first. Open the Decode tab, paste each message you
+        received into its own box, and tap Read forecast.</p>
     </div>
-    <p class="note" id="modelHelp"></p>
-
-    <button class="act" onclick="locate()" id="locBtn">Use my location</button>
-    <p class="err" id="locErr" hidden></p>
-
-    <div id="fix" hidden>
-      <div class="reportMeta" id="fixMeta"></div>
-      <div class="out" id="reqText"></div>
-      <button class="act" onclick="copy(document.getElementById('reqText').textContent, this)">Copy message</button>
-      <p class="note" id="sendHelp"></p>
-    </div>
+    <div id="fcOut"></div>
   </section>
 
   <section id="dec" hidden>
-    <div id="lastCard" class="lastCard" hidden>
-      <div><b>Last forecast saved</b><small id="lastMeta"></small></div>
-      <button class="miniBtn" onclick="clearLast()">Clear</button>
+    <div class="panel">
+      <p class="plabel">Paste reply <span>one message per box, any order</span></p>
+      <div id="boxes"></div>
+      <button class="alt" id="addBtn" onclick="addBox()">+ Add another message</button>
+      <button class="exec" onclick="doDecode()">Read forecast</button>
+      <p class="err" id="decErr" hidden></p>
+      <button class="alt" onclick="clearBoxes()">Clear all</button>
     </div>
-    <div id="decodeInput">
-      <label>Forecast reply</label>
-      <p class="note">Paste each message you received into its own box.
-      Order does not matter. Leave unused boxes empty.</p>
-      <div id="msgBoxes"></div>
-      <button class="act ghost" onclick="addBox()" id="addBoxBtn">Add another message</button>
-      <button class="act" onclick="doDecode()">Read forecast</button>
-    </div>
-    <button id="newDecodeBtn" class="act ghost" onclick="showDecodeInput()" hidden>Decode another reply</button>
-    <p class="err" id="decErr" hidden></p>
-    <div id="report"></div>
   </section>
 
   <section id="help" hidden>
-    <h2>What this is</h2>
-    <p>You text a short request from your inReach. A free service pulls a
-    high resolution weather model for your exact spot, packs a full forecast
-    into a few messages of coded letters, and sends them back. This app
-    builds the request and reads the reply. It works entirely offline once
-    installed.</p>
+    <div class="panel help">
+      <h3>What this is</h3>
+      <p>You text a short request from your inReach. A free service pulls a
+      high resolution weather model for your exact spot, packs a full forecast
+      into one to three messages of coded letters, and sends them back. This
+      app builds the request and reads the reply, entirely offline.</p>
 
-    <h2>Which model to pick</h2>
-    <p><b>48 h HRRR-AK.</b> The highest resolution model available for
-    Alaska, on a 3 km grid, so it actually resolves terrain: inlet
-    channeling, gap winds, the difference between a valley and the ridge
-    above it. Best choice for anything inside two days. This is the only
-    option that includes winds aloft.</p>
-    <p><b>5 day.</b> HRRR-AK for the first 48 hours, then a global model
-    blend for days 3 to 5. The far days are coarse, roughly 11 to 13 km,
-    which is fine for "is a system coming" and poor for timing. Use it for
-    planning, not commitment.</p>
-    <p><b>5 day NWS.</b> The National Weather Service forecast grids, which
-    are model output adjusted by Alaska forecasters who know the local
-    biases. Different failure modes than raw model output. When it and
-    HRRR-AK agree, trust goes up, and that is exactly why both exist here.
-    No winds aloft.</p>
+      <h3>Which source to pick</h3>
+      <p><b>HRRR-AK 48H.</b> The highest resolution model available for Alaska,
+      on a 3 km grid, so it actually resolves terrain: inlet channeling, gap
+      winds, the difference between a valley and the ridge above it. Best for
+      anything inside two days, and the only source with winds aloft.</p>
+      <p><b>Blend 5-day.</b> HRRR-AK for the first 48 hours, then a global model
+      for days 3 to 5 at roughly 11 to 13 km. Fine for "is a system coming",
+      poor for timing. Planning, not commitment.</p>
+      <p><b>NWS 5-day.</b> National Weather Service grids, model output adjusted
+      by Alaska forecasters who know the local biases. Different failure modes
+      from raw model output, so when it and HRRR-AK agree your confidence should
+      go up. That is why both are here.</p>
 
-    <h2>Which reply length to pick</h2>
-    <p>Every reply carries the same fields. Length buys time resolution, not
-    more information per step. On an inReach each message counts against
-    your plan, so Basic is the cheap habit.</p>
-    <table class="helpTable">
-      <tr><th>Choice</th><th>Messages</th><th>HRRR-AK</th><th>5 day</th><th>NWS</th></tr>
-      <tr><td>Basic, cover 2 days</td><td>1</td><td>every 4 h</td>
-        <td>6 h then 12 h</td><td>4 h then 12 h</td></tr>
-      <tr><td>Basic, detail 24 h</td><td>1</td><td>every 2 h, 24 h only</td>
-        <td>every 2 h, 24 h only</td><td>every 2 h, 24 h only</td></tr>
-      <tr><td>Standard</td><td>2</td><td>every 2 h</td>
-        <td>3 h then 6 h</td><td>2 h then 6 h</td></tr>
-      <tr><td>Full</td><td>3</td><td>hourly, then 2 h</td>
-        <td>2 h then 3 h</td><td>hourly then 4 h</td></tr>
-    </table>
-    <p class="note"><b>Winds aloft are only available from HRRR-AK, and only
-    within 48 hours.</b> They appear on every HRRR-AK segment regardless of
-    reply length, at 3,000, 6,000 and 10,000 ft above sea level. The NWS
-    option and days 3 to 5 of the 5 day option do not carry them, because
-    those sources do not provide them.</p>
+      <h3>Which reply detail to pick</h3>
+      <p>Every step carries the same fields. Length buys time resolution, not
+      more information per step. Each message counts against your inReach plan,
+      so Basic is the cheap habit.</p>
+      <table class="htab">
+        <tr><th>Detail</th><th>HRRR-AK</th><th>Blend 5-day</th><th>NWS 5-day</th></tr>
+        <tr><td><b>Basic</b><br>1 msg</td><td>3 h steps, 48 h<br>wind at 5,000 ft</td>
+          <td class="k">not available</td><td class="k">not available</td></tr>
+        <tr><td><b>Standard</b><br>2 msg</td><td>2 h steps, 48 h<br>winds 3/6/10k</td>
+          <td>3 h to 48 h<br>then 6 h to day 5</td><td>2 h to 48 h<br>then 6 h to day 5</td></tr>
+        <tr><td><b>Full</b><br>3 msg</td><td>hourly 24 h<br>then 2 h to 48 h</td>
+          <td>2 h to 48 h<br>then 3 h to day 5</td><td>hourly to 48 h<br>then 4 h to day 5</td></tr>
+      </table>
+      <p><b>Basic is HRRR-AK only.</b> One message cannot carry five days at any
+      resolution worth having, so the other two sources grey out.</p>
+      <p><b>Winds aloft come only from HRRR-AK, and only within 48 hours.</b> On
+      Standard and Full you get three levels: 3,000, 6,000 and 10,000 ft above
+      sea level. Basic squeezes to a single 5,000 ft level, because that is what
+      fits in one message. Neither NWS nor days 3 to 5 of the blend carry winds
+      aloft, because those sources do not provide them.</p>
 
-    <h2>Before every trip, in town</h2>
-    <ol>
-      <li>Open this app in airplane mode. If it does not load, open it once
-        with signal and try again. Do not leave until it loads offline.</li>
-      <li>Save the wx address as a contact on the inReach, or in the Garmin
-        app, whichever you send from.</li>
-      <li>Send one test request from the trailhead and decode the reply, so
-        you know the whole loop is alive before you need it.</li>
-    </ol>
+      <h3>Before every trip, in town</h3>
+      <ol>
+        <li>Open this app in airplane mode. If it does not load, open it once
+          with signal and try again. Do not leave until it loads offline.</li>
+        <li>Save the wx address as a contact on the inReach.</li>
+        <li>Send one test request from the trailhead and decode the reply, so
+          you know the loop is alive before you need it.</li>
+      </ol>
 
-    <h2>Requesting a forecast</h2>
-    <ol>
-      <li>Pick the model and the reply length.</li>
-      <li>Tap <b>Use my location</b>. Step into the open if it fails. GPS
-        works in airplane mode.</li>
-      <li>Tap <b>Copy message</b> and send it to your wx address.</li>
-      <li>Leave location sharing on if you can. The service then uses the
-        inReach's own coordinates, which are more precise than a phone fix
-        under trees. If you keep location off, the coordinates in the
-        message text are used instead and everything still works.</li>
-      <li>Wait. Ten to twenty minutes is normal.</li>
-    </ol>
+      <h3>Requesting a forecast</h3>
+      <ol>
+        <li>Pick the reply detail and the source.</li>
+        <li>Tap <b>Use current location</b>. Step into the open if it fails.
+          GPS works in airplane mode.</li>
+        <li>Tap <b>Copy message</b> and send it to your wx address.</li>
+        <li>Leave location sharing on if you can. The service then uses the
+          inReach's own coordinates, which beat a phone fix under trees. With
+          sharing off, the coordinates in the message text are used.</li>
+        <li>Wait. Ten to twenty minutes is normal.</li>
+      </ol>
 
-    <h2>Reading the reply</h2>
-    <ol>
-      <li>Copy each reply message.</li>
-      <li>Open <b>Decode</b> and paste each one into its own box. Order does
-        not matter. Add boxes if you asked for more than two.</li>
-      <li>Tap <b>Read forecast</b>.</li>
-    </ol>
-    <p>If it says a part is missing, one message has not arrived yet. If it
-    says the checksum failed, a message got garbled or truncated: re-copy
-    each one in full and try again.</p>
+      <h3>Reading the reply</h3>
+      <ol>
+        <li>Copy each reply message.</li>
+        <li>Open <b>Decode</b> and paste each into its own box. Order does not
+          matter. Add boxes if you asked for more than two.</li>
+        <li>Tap <b>Read forecast</b>.</li>
+      </ol>
+      <p>If it says a part is missing, one message has not arrived yet. If the
+      checksum failed, a message was garbled or truncated: re-copy each in full
+      and try again.</p>
 
-    <h2>Reading the display</h2>
-    <p>Each row is one time step, with the temperature and a weather icon on
-    the left. Wind is spelled out, like "from the west-southwest at 18 mph,
-    gusts 31." Precipitation shows amount and type. The banner near the top
-    compares the freezing level to your ground elevation, and turns red when
-    it reaches you. Winds aloft, when present, sit on the small line beneath
-    each row.</p>
+      <h3>Reading the chart</h3>
+      <p>The plot at the top is temperature across the whole period, so you see
+      the shape before reading any numbers. Below it the forecast is a table you
+      scroll sideways: time runs left to right, variables run down. The first
+      column stays put while you scroll, so you always know which row you are
+      reading. An amber line down the chart marks where the data source changes,
+      for example HRRR-AK handing off to the global model on day 3. Wind arrows
+      point the way the wind is travelling; the compass letters say where it
+      comes from.</p>
 
-    <h2>If things go wrong</h2>
-    <ol>
-      <li><b>No reply after 30 minutes:</b> resend. Satellite messages do go
-        missing. A reply saying the forecast failed means try again in 15
-        minutes.</li>
-      <li><b>Reply is readable text, not code:</b> the service hit an error
-        and is telling you what happened.</li>
-      <li><b>Phone dead:</b> the coded reply is unreadable without this app.
-        Treat this as a supplement, never the plan.</li>
-    </ol>
+      <h3>If things go wrong</h3>
+      <ol>
+        <li><b>No reply after 30 minutes:</b> resend. Satellite messages do go
+          missing. A reply saying the forecast failed means try again in 15
+          minutes.</li>
+        <li><b>Reply is readable text, not code:</b> the service hit an error
+          and is telling you what happened.</li>
+        <li><b>Phone dead:</b> the coded reply is unreadable without this app.
+          Treat this as a supplement, never the plan.</li>
+      </ol>
 
-    <div class="warn"><b>This is a hobby service with no guarantee.</b> It
-    depends on free tiers of several services and a weather model that is
-    wrong sometimes, especially in valleys during inversions. Never bet a
-    river crossing, a flight, or an exposed ridge on a single forecast from
-    anything, including this.</div>
+      <div class="warnbox"><b>This is a hobby service with no guarantee.</b> It
+      depends on free tiers of several services and a weather model that is
+      wrong sometimes, especially in valleys during inversions. Never bet a
+      river crossing, a flight, or an exposed night on the ridge on a single
+      forecast from anything, including this.</div>
 
-    <h2>Credits</h2>
-    <p class="credits">Built by <b>Logan Wendling</b>.</p>
-    <p class="credits">App version <b>2026-08-05e</b>. If this does not match
-    what you just published, the phone is running a cached copy: delete the
-    home screen icon, reopen the page in Safari, and add it again.</p>
-    <p class="credits">Forecast data comes from public sources, free of
-    charge:</p>
-    <ul class="credits">
-      <li><b>NOAA / NCEP HRRR-AK</b>, the 3 km High-Resolution Rapid Refresh
-        Alaska model, for the first 48 hours, retrieved from the NOAA Open
-        Data Dissemination archive on AWS.</li>
-      <li><b>Open-Meteo</b>, blending global models including NOAA GFS and
-        DWD ICON, for days 3 through 5.</li>
-      <li><b>NOAA National Weather Service</b> forecast grids for the NWS
-        option.</li>
-      <li><b>Copernicus GLO-90</b> elevation data, via Open-Meteo, used to
-        correct temperatures to your actual ground height.</li>
-    </ul>
-    <p class="credits">Model data is downloaded and packed by <b>Herbie</b>
-    and <b>pygrib</b>. None of these organisations endorse or have any
-    involvement with this tool, and any errors in the forecast you see here
-    are this tool's, not theirs.</p>
+      <h3>Credits</h3>
+      <p class="k">Built by Logan Wendling. App version <b>2026-08-06a</b>. If
+      that does not match what you just published, this phone is running a
+      cached copy: delete the home screen icon, reopen in Safari, add it again.</p>
+      <p class="k">Data from NOAA (HRRR-AK, National Weather Service),
+      Open-Meteo, and Copernicus elevation. Retrieval by Herbie and pygrib.
+      None of these organizations endorse or are involved with this tool, and
+      any errors here are this tool's, not theirs.</p>
+    </div>
   </section>
-</main>
+</div>
+
+<nav>
+  <button class="on" onclick="showTab('req',this)">Request</button>
+  <button onclick="showTab('fc',this)">Forecast</button>
+  <button onclick="showTab('dec',this)">Decode</button>
+  <button onclick="showTab('help',this)">Help</button>
+</nav>
 
 <script src="codec.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const store = {
   get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
-  set(k,v){ try { localStorage.setItem(k,v); } catch(e){} },
-  del(k){ try { localStorage.removeItem(k); } catch(e){} }
+  set(k,v){ try { localStorage.setItem(k,v); } catch(e){} }
 };
-let model = store.get('model') || 'hrrr';
-let tier = store.get('tier') || 'standard';
-let basicVariant = store.get('basicVariant') || 'basic48';
-let units = store.get('units') || 'us';
-let theme = store.get('theme') || 'day';
-let fixData = null;
-let currentForecast = null;
-let currentCode = '';
-let currentDecodedAt = null;
 
-const MODEL_HELP = {
-  hrrr: 'Sharpest model for Alaska terrain. 48 hours, hourly in Full and 2-hourly in Condensed.',
-  '5day': 'HRRR-AK for days 1 and 2, then coarser Open-Meteo data through day 5.',
-  nws: 'Forecaster-adjusted NWS grids through day 5. No ridge winds.'
+/* What each tier and source combination actually buys, shown on the request
+   screen so nobody spends satellite messages blind. */
+const RES = {
+  basic:{
+    hrrr:{r:'3 h steps for 48 h', w:'wind at 5,000 ft'},
+    '5day':{r:'not available at 1 message', w:''},
+    nws:{r:'not available at 1 message', w:''}},
+  standard:{
+    hrrr:{r:'2 h steps for 48 h', w:'winds 3k / 6k / 10k ft'},
+    '5day':{r:'3 h to 48 h, then 6 h to day 5', w:'winds 3k / 6k / 10k ft in first 48 h'},
+    nws:{r:'2 h to 48 h, then 6 h to day 5', w:'no winds aloft'}},
+  full:{
+    hrrr:{r:'hourly for 24 h, then 2 h to 48 h', w:'winds 3k / 6k / 10k ft'},
+    '5day':{r:'2 h to 48 h, then 3 h to day 5', w:'winds 3k / 6k / 10k ft in first 48 h'},
+    nws:{r:'hourly to 48 h, then 4 h to day 5', w:'no winds aloft'}},
 };
-const KEYWORD = { hrrr: '', '5day': ' 5day', nws: ' nws' };
-const TIER_HELP = {
-  basic: 'One message back. Cheapest on your inReach plan.',
-  standard: 'Two messages back. Twice the time steps of Basic.',
-  full: 'Three messages back. Hourly detail through the first day.',
-};
-const TIER_KEYWORD = { basic48: ' basic', basic24: ' b24',
-                       standard: '', full: ' full' };
-const PTYPE_WORD = { rain:'Rain', snow:'Snow', mixed:'Rain / snow', none:'' };
-const DIR_INDEX = {N:0,NNE:1,NE:2,ENE:3,E:4,ESE:5,SE:6,SSE:7,S:8,SSW:9,SW:10,WSW:11,W:12,WNW:13,NW:14,NNW:15};
-const TRAVEL_ARROWS = ['↓','↙','↙','↙','←','↖','↖','↖','↑','↗','↗','↗','→','↘','↘','↘'];
+const NAME={hrrr:'HRRR-AK 48H','5day':'BLEND 5-DAY',nws:'NWS 5-DAY'};
+const KEYWORD={hrrr:'','5day':' 5day',nws:' nws'};
+const TIERKW={basic:' basic',standard:'',full:' full'};
+const TIERIDX={basic:0,standard:1,full:2};
+let T=store.get('tier')||'standard', M=store.get('model')||'hrrr', fix=null;
 
-function show(which){
-  ['req','dec','help'].forEach(id => {
-    $(id).hidden = id !== which;
-    $('tab-' + id).setAttribute('aria-selected', id === which);
+function setTier(v,btn){
+  T=v; store.set('tier',v);
+  const btns=document.querySelectorAll('#tiers button');
+  btns.forEach(b=>b.classList.remove('on'));
+  (btn||btns[TIERIDX[v]]).classList.add('on');
+  const lock = v==='basic';
+  ['5day','nws'].forEach(k=>{
+    const e=$('m-'+k); e.disabled=lock; if(lock) e.classList.remove('on');
   });
+  if(lock){ $('m-hrrr').classList.add('on'); M='hrrr'; store.set('model','hrrr'); }
+  $('note').textContent = lock ? 'BASIC = HRRR-AK ONLY' : 'select';
+  upd();
 }
-function setTier(v){
-  tier = v; store.set('tier', v);
-  ['basic','standard','full'].forEach(x =>
-    $('tier-' + x).setAttribute('aria-pressed', x === v));
-  $('basicOpts').hidden = v !== 'basic';
-  $('tierHelp').textContent = TIER_HELP[v];
-  if (fixData) renderRequest();
+function setModel(btn){
+  if(!btn || btn.disabled) return;
+  document.querySelectorAll('.mrow').forEach(x=>x.classList.remove('on'));
+  btn.classList.add('on'); M=btn.id.replace('m-',''); store.set('model',M); upd();
+}
+function upd(){
+  const n = T==='basic'?1:T==='standard'?2:3;
+  const d = RES[T][M];
+  $('detail').innerHTML='<b>'+d.r.toUpperCase()+'</b>'+
+    (d.w?'<br><span class="aloft">'+d.w+'</span>':'');
+  ['hrrr','5day','nws'].forEach(k=>{ $('r-'+k).textContent = RES[T][k].r; });
+  $('sel').textContent = T.toUpperCase()+' / '+NAME[M];
+  $('est').innerHTML = n+' MSG REPLY<br>ETA 10&ndash;20 MIN';
+  if(fix) showMsg();
 }
 
-function setBasic(v){
-  basicVariant = v; store.set('basicVariant', v);
-  $('bs-48').setAttribute('aria-pressed', v === 'basic48');
-  $('bs-24').setAttribute('aria-pressed', v === 'basic24');
-  if (fixData) renderRequest();
-}
-
-function tierKey(){ return tier === 'basic' ? basicVariant : tier; }
-
-function setModel(m){
-  model = m; store.set('model', m);
-  ['hrrr','5day','nws'].forEach(x => $('md-' + x).setAttribute('aria-pressed', x === m));
-  $('modelHelp').textContent = MODEL_HELP[m];
-  if (fixData) renderRequest();
-}
-function toggleUnits(){
-  units = units === 'us' ? 'metric' : 'us';
-  store.set('units', units); updatePrefs(); renderCurrent();
-}
-function toggleTheme(){
-  theme = theme === 'day' ? 'night' : 'day';
-  store.set('theme', theme); updatePrefs();
-}
-function updatePrefs(){
-  document.documentElement.dataset.theme = theme;
-  $('unitBtn').textContent = units === 'us' ? 'US' : 'Metric';
-  $('themeBtn').textContent = theme === 'day' ? 'Night' : 'Day';
-  document.querySelector('meta[name="theme-color"]').setAttribute('content', theme === 'day' ? '#0B3B45' : '#101614');
-}
 function locate(){
-  const btn = $('locBtn'), err = $('locErr');
-  err.hidden = true; btn.disabled = true; btn.textContent = 'Getting a fix...';
-  navigator.geolocation.getCurrentPosition(pos => {
-    fixData = {lat:pos.coords.latitude,lon:pos.coords.longitude,acc:pos.coords.accuracy,alt:pos.coords.altitude};
-    btn.disabled = false; btn.textContent = 'Update location'; renderRequest();
-  }, e => {
-    btn.disabled = false; btn.textContent = 'Use my location';
-    err.hidden = false; err.textContent = 'No fix: ' + e.message + '. Step into the open and try again.';
-  }, {enableHighAccuracy:true,timeout:30000,maximumAge:60000});
+  const b=$('locBtn'), e=$('locErr');
+  e.hidden=true; b.disabled=true; b.textContent='\u25C9 Getting a fix...';
+  navigator.geolocation.getCurrentPosition(p=>{
+    fix={lat:p.coords.latitude, lon:p.coords.longitude,
+         acc:p.coords.accuracy, alt:p.coords.altitude};
+    b.disabled=false; b.textContent='\u25C9 Update location';
+    showMsg();
+  }, err=>{
+    b.disabled=false; b.textContent='\u25C9 Use current location';
+    e.hidden=false;
+    e.textContent='No fix: '+err.message+'. Step into the open and try again, '+
+      'or read coordinates off the Compass app and enter them by hand.';
+  }, {enableHighAccuracy:true, timeout:30000, maximumAge:60000});
 }
-function renderRequest(){
-  const f = fixData; $('fix').hidden = false;
-  $('fixMeta').innerHTML = '<b>' + f.lat.toFixed(4) + ', ' + f.lon.toFixed(4) + '</b><br>' +
-    'accurate to about ' + Math.round(f.acc) + ' m' +
-    (f.alt != null ? ' · GPS elevation ' + Math.round(f.alt) + ' m' : '');
-  // Six decimals is roughly 10 cm, finer than any model grid, and it
-  // matches what the inReach itself reports. If you leave location
-  // sharing on, the service uses the device's own coordinates instead,
-  // which are more accurate than a phone fix indoors or under canopy.
-  $('reqText').textContent =
-    'WX ' + f.lat.toFixed(6) + ' ' + f.lon.toFixed(6) +
-    KEYWORD[model] + TIER_KEYWORD[tierKey()];
-  const msgs = tier === 'basic' ? 1 : tier === 'standard' ? 2 : 3;
-  $('sendHelp').textContent =
-    'Send this to your wx address from the inReach. The reply comes back as ' +
-    msgs + (msgs === 1 ? ' message.' : ' messages.');
+function manual(){
+  const v=prompt('Coordinates as "lat lon", for example 61.104498 -149.878428');
+  if(!v) return;
+  const m=v.match(/(-?\d+(?:\.\d+)?)[ ,]+(-?\d+(?:\.\d+)?)/);
+  if(!m){ alert('Could not read that. Use decimal degrees, like 61.1045 -149.8784'); return; }
+  fix={lat:parseFloat(m[1]), lon:parseFloat(m[2]), acc:null, alt:null};
+  showMsg();
 }
-async function copy(text, btn){
-  try { await navigator.clipboard.writeText(text); }
+function showMsg(){
+  $('fix').hidden=false;
+  /* Six decimals is finer than any model grid and matches what the inReach
+     reports. If location sharing is left on, the service prefers the
+     device's own coordinates over these. */
+  $('msgOut').textContent =
+    'WX '+fix.lat.toFixed(6)+' '+fix.lon.toFixed(6)+KEYWORD[M]+TIERKW[T];
+  $('fixMeta').innerHTML =
+    (fix.acc!=null ? 'Fix accurate to about '+Math.round(fix.acc)+' m' : 'Entered by hand')+
+    (fix.alt!=null ? ' \u00B7 GPS elevation '+Math.round(fix.alt)+' m' : '')+
+    '<br>Send to your wx address from the inReach.';
+}
+async function copyMsg(btn){
+  const t=$('msgOut').textContent;
+  try{ await navigator.clipboard.writeText(t); }
   catch(e){
-    const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta);
-    ta.select(); document.execCommand('copy'); ta.remove();
+    const ta=document.createElement('textarea'); ta.value=t;
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); }catch(_){}
+    ta.remove();
   }
-  const old=btn.textContent; btn.textContent='Copied'; setTimeout(()=>btn.textContent=old,1400);
+  const was=btn.textContent; btn.textContent='COPIED';
+  setTimeout(function(){ btn.textContent=was; },1400);
 }
-function boxCount(){ return $('msgBoxes').children.length; }
 
+/* ---------------- decode ---------------- */
+let nBox=0;
 function addBox(){
-  const n = boxCount() + 1;
-  if (n > 4) return;
-  const wrap = document.createElement('div');
-  wrap.className = 'msgBox';
-  wrap.innerHTML = '<label for="msg' + n + '">Message ' + n + '</label>' +
-    '<textarea id="msg' + n + '" rows="2" autocapitalize="off" ' +
-    'autocorrect="off" spellcheck="false" placeholder="Paste message ' + n + '"></textarea>';
-  $('msgBoxes').appendChild(wrap);
-  $('addBoxBtn').hidden = boxCount() >= 4;
+  if(nBox>=4) return;
+  nBox++;
+  const d=document.createElement('div');
+  d.className='box';
+  d.innerHTML='<label for="msg'+nBox+'">Message '+nBox+'</label>'+
+    '<textarea id="msg'+nBox+'" rows="2" spellcheck="false" autocapitalize="off" '+
+    'autocorrect="off" placeholder="paste message '+nBox+'"></textarea>';
+  $('boxes').appendChild(d);
+  $('addBtn').hidden = nBox>=4;
 }
-
-function resetBoxes(n){
-  $('msgBoxes').innerHTML = '';
-  for (let i = 0; i < (n || 2); i++) addBox();
+function clearBoxes(){
+  $('boxes').innerHTML=''; nBox=0; $('addBtn').hidden=false;
+  addBox(); addBox(); $('decErr').hidden=true;
 }
-
-function collectBoxes(){
-  const out = [];
-  for (let i = 1; i <= boxCount(); i++){
-    const el = document.getElementById('msg' + i);
-    if (el && el.value.trim()) out.push(el.value.trim());
+function collect(){
+  const out=[];
+  for(let i=1;i<=nBox;i++){
+    const el=$('msg'+i);
+    if(el && el.value.trim()) out.push(el.value.trim());
   }
   return out.join('\n');
 }
-
 function doDecode(){
-  const err=$('decErr'), out=$('report'); err.hidden=true; out.innerHTML='';
-  const text=collectBoxes();
-  try{
-    const r=decode(text); currentForecast=r; currentCode=text; currentDecodedAt=new Date();
-    store.set('last-code',text); store.set('last-decoded-at',currentDecodedAt.toISOString());
-    renderCurrent(); updateLastCard(); setDecodeInput(false);
-  }catch(e){ err.hidden=false; err.textContent=e.message; }
-}
-function restoreLast(){
-  const text=store.get('last-code'); if(!text) return;
-  try{
-    currentForecast=decode(text); currentCode=text;
-    currentDecodedAt=new Date(store.get('last-decoded-at') || Date.now());
-    renderCurrent(); updateLastCard(); setDecodeInput(false);
-  }catch(e){ store.del('last-code'); store.del('last-decoded-at'); }
-}
-function clearLast(){
-  store.del('last-code'); store.del('last-decoded-at'); currentForecast=null; currentCode='';
-  currentDecodedAt=null; resetBoxes(2); $('report').innerHTML=''; $('lastCard').hidden=true; setDecodeInput(true);
-}
-function setDecodeInput(showIt){
-  $('decodeInput').hidden=!showIt; $('newDecodeBtn').hidden=showIt;
-}
-function showDecodeInput(){
-  setDecodeInput(true); resetBoxes(2);
-}
-function updateLastCard(){
-  if(!currentForecast){ $('lastCard').hidden=true; return; }
-  $('lastCard').hidden=false;
-  $('lastMeta').textContent='Decoded ' + relativeTime(currentDecodedAt) + ' · model run ' + relativeTime(currentForecast.header.runTime);
-}
-function renderCurrent(){
-  if(!currentForecast) return;
-  $('report').innerHTML=report(currentForecast.header,currentForecast.segments);
+  const e=$('decErr'); e.hidden=true;
+  let r;
+  try{ r=decode(collect()); }
+  catch(err){ e.hidden=false; e.textContent=err.message; return; }
+  render(r.header, r.segments);
+  showTab('fc', document.querySelectorAll('nav button')[1]);
 }
 
-function flatten(h,segments){
-  const rows=[];
-  segments.forEach(g=>g.steps.forEach((s,i)=>rows.push({
-    ...s,src:g.src,fields:g.fields,stepH:g.stepH,
-    forecastH:g.firstH+i*g.stepH,time:stepTime(h,g,i)
-  })));
-  return rows.sort((a,b)=>a.time-b.time);
-}
-function report(h,segments){
-  const rows=flatten(h,segments);
-  const sources=[...new Set(segments.map(g=>g.src))];
-  const horizon=Math.max(...rows.map(r=>r.forecastH));
-  const ageH=(Date.now()-h.runTime.getTime())/3600000;
-  const levelName=sources.length===1 && sources[0]==='NWS' ? 'Snow level' : 'Freezing level';
-  let html='<div class="reportMeta"><b>'+sources.join(' + ')+'</b> run '+fmtFull(h.runTime)+
-    ' · through '+fmtFull(rows[rows.length-1].time)+'<br>'+h.lat.toFixed(3)+', '+h.lon.toFixed(3)+
-    ' · ground '+elevPrecise(h.elevM)+' · '+horizon+' h forecast</div>';
-  if(ageH>12) html+='<div class="stale"><b>Older model run.</b> This forecast was initialized '+Math.floor(ageH)+' hours ago.</div>';
-  html+=summaryCard(h,rows,levelName);
-  html+=levelBanner(h,rows,levelName);
-  html+=dayBlocks(h,rows,levelName);
-  html+=footerStats(rows);
-  return html;
-}
-function summaryCard(h,rows,levelName){
-  const now=Date.now();
-  let slice=rows.filter(r=>r.time.getTime()>=now-3600000 && r.time.getTime()<=now+24*3600000);
-  if(!slice.length) slice=rows.filter(r=>r.forecastH<=24);
-  if(!slice.length) slice=rows.slice(0,Math.min(12,rows.length));
-  const temps=slice.map(r=>r.tempF).filter(Number.isFinite);
-  const lo=Math.min(...temps), hi=Math.max(...temps);
-  const pcp=slice.reduce((a,r)=>a+(r.precipIn||0),0);
-  const wet=slice.filter(r=>(r.precipIn||0)>0);
-  const maxWind=maxBy(slice,r=>r.windMph||0);
-  const maxGust=maxBy(slice,r=>r.gustMph||r.windMph||0);
-  const levels=slice.filter(r=>Number.isFinite(r.frzLevelM));
-  const minLevel=levels.length?minBy(levels,r=>r.frzLevelM):null;
-  const upperPeaks=LEVELS.map(lv=>{
-    const pk=maxBy(slice.filter(r=>Number.isFinite(r[lv.key+'Mph'])),r=>r[lv.key+'Mph']);
-    return pk?{lv:lv,row:pk,mph:pk[lv.key+'Mph']}:null;
-  }).filter(Boolean);
-  const windLine=maxWind ? wind(maxWind.windMph) : 'Not sent';
-  const windSub=maxGust
-    ? (maxGust.windDir +
-       (Number.isFinite(maxGust.gustMph) ? ', gusts '+wind(maxGust.gustMph) : '') +
-       ' near '+fmtTime(maxGust.time))
-    : '';
-  const pcpSub=wet.length ? PTYPE_WORD[dominantType(wet)]+' '+fmtTime(wet[0].time)+' to '+fmtTime(wet[wet.length-1].time) : 'No measurable precipitation';
-  let levelValue='Not sent',levelSub='';
-  if(minLevel){
-    levelValue=elev(minLevel.frzLevelM);
-    const below=minLevel.frzLevelM<=h.elevM;
-    levelSub=(below?'At or below ground':'Lowest point')+' near '+fmtTime(minLevel.time);
-  }
-  let ridgeValue='Not sent',ridgeSub='';
-  const strongest=maxBy(upperPeaks,p=>p.mph);
-  if(strongest){
-    ridgeValue=wind(strongest.mph);
-    ridgeSub=strongest.row[strongest.lv.key+'Dir']+' at '+levelLabel(strongest.lv)+
-      ' near '+fmtTime(strongest.row.time);
-  }
-  const hazards=hazardText(h,slice,pcp,maxGust,upperPeaks,minLevel);
-  return '<div class="summaryCard"><div class="summaryTitle"><h2>Next 24 hours</h2><small>'+fmtDate(slice[0].time)+'</small></div>'+ 
-    '<div class="summaryGrid">'+
-      metric('Temperature',temp(lo)+' to '+temp(hi),'Forecast range')+
-      metric('Precipitation',precip(pcp),pcpSub)+
-      metric('Surface wind',windLine,windSub)+
-      metric(levelName,levelValue,levelSub)+
-      metric('Winds aloft',ridgeValue,ridgeSub)+
-      metric('Cloud cover',cloudSummary(slice),'Cloudiest point')+
-    '</div><div class="alert'+(hazards.warn?' warn':'')+'"><b>'+(hazards.warn?'Watch: ':'Summary: ')+'</b>'+hazards.text+'</div></div>';
-}
-function metric(label,value,sub){
-  return '<div class="metric"><span>'+label+'</span><b>'+value+'</b><small>'+sub+'</small></div>';
-}
-function hazardText(h,rows,pcp,maxGust,upperPeaks,minLevel){
-  const items=[];
-  const snow=rows.some(r=>(r.precipIn||0)>0 && (r.ptype==='snow'||r.ptype==='mixed'));
-  if(snow) items.push('snow or mixed precipitation is forecast');
-  if(minLevel && minLevel.frzLevelM<=h.elevM) items.push('the '+(rows.every(r=>r.src==='NWS')?'snow':'freezing')+' level reaches your elevation');
-  if(maxGust && (maxGust.gustMph||0)>=35) items.push('surface gusts reach '+wind(maxGust.gustMph));
-  const ridgeMax=upperPeaks.length?Math.max(...upperPeaks.map(p=>p.mph)):0;
-  if(ridgeMax>=40) items.push('winds aloft reach '+wind(ridgeMax));
-  if(pcp>=0.5) items.push('total precipitation exceeds '+precip(0.5));
-  if(items.length) return {warn:true,text:sentenceList(items)+'.'};
-  return {warn:false,text:'No major wind, precipitation, or freezing-level thresholds were flagged by this simple screen.'};
-}
-function levelBanner(h,rows,label){
-  const levels=rows.filter(r=>Number.isFinite(r.frzLevelM)); if(!levels.length) return '';
-  const below=levels.filter(r=>r.frzLevelM<=h.elevM);
-  const min=minBy(levels,r=>r.frzLevelM);
-  if(!below.length) return '<div class="levelBanner">'+label+' stays above your ground. Lowest <b>'+elev(min.frzLevelM)+'</b>, about <b>'+elev(min.frzLevelM-h.elevM)+'</b> overhead near '+fmtFull(min.time)+'.</div>';
-  return '<div class="levelBanner below">'+label+' reaches your elevation from about <b>'+fmtFull(below[0].time)+'</b> through <b>'+fmtFull(below[below.length-1].time)+'</b>. Lowest point: <b>'+elev(min.frzLevelM)+'</b>.</div>';
-}
-function dayBlocks(h,rows,levelName){
-  const groups=[]; const map=new Map();
-  rows.forEach(r=>{
-    const key=dateKey(r.time);
-    if(!map.has(key)){const g={key,date:r.time,rows:[]};map.set(key,g);groups.push(g);}
-    map.get(key).rows.push(r);
-  });
-  return groups.map((g,idx)=>dayBlock(h,g,idx<2,levelName)).join('');
-}
-function dayBlock(h,g,open,levelName){
-  const temps=g.rows.map(r=>r.tempF).filter(Number.isFinite);
-  const p=g.rows.reduce((a,r)=>a+(r.precipIn||0),0);
-  const gust=Math.max(...g.rows.map(r=>r.gustMph||r.windMph||0));
-  const sources=[...new Set(g.rows.map(r=>r.src))];
-  let html='<details class="day" '+(open?'open':'')+'><summary><div class="dayHead"><div><div class="dayName">'+fmtDay(g.date)+' <span class="chev">›</span></div><div class="daySources">'+sources.join(' + ')+'</div></div><div class="dayTotals">'+temp(Math.min(...temps))+' / '+temp(Math.max(...temps))+'<br>'+precip(p)+' &middot; gusts '+wind(gust)+'</div></div></summary>';
-  let lastSource='';
-  g.rows.forEach(r=>{
-    if(r.src!==lastSource){html+='<div class="sourceBreak">'+r.src+' · every '+r.stepH+' h</div>';lastSource=r.src;}
-    html+=weatherRow(h,r,levelName);
-  });
-  return html+'</details>';
-}
-
-/* ---------- weather icons ----------
-   Small flat SVGs in the spirit of the ones on weather sites. Chosen from
-   precipitation type, amount and cloud cover, with day and night variants
-   because a sun icon at 2 AM in October would be nonsense. */
-const ICON_SVG = {
-  clearDay: '<circle cx="12" cy="12" r="5" fill="#E8A33D"/>' +
-    '<g stroke="#E8A33D" stroke-width="2" stroke-linecap="round">' +
-    '<path d="M12 1v3M12 20v3M1 12h3M20 12h3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M19.8 4.2l-2.1 2.1M6.3 17.7l-2.1 2.1"/></g>',
-  clearNight: '<path d="M17 13.5A6.5 6.5 0 0 1 10.5 7c0-1.2.3-2.3.9-3.2A8 8 0 1 0 20.2 15c-1 .3-2.1.5-3.2.5z" fill="#8899BB"/>',
-  partlyDay: '<circle cx="9" cy="9" r="4" fill="#E8A33D"/>' +
-    '<g stroke="#E8A33D" stroke-width="1.6" stroke-linecap="round">' +
-    '<path d="M9 1.5v2M1.5 9h2M3.7 3.7l1.4 1.4M14.3 3.7l-1.4 1.4"/></g>' +
-    '<path d="M8 19a4 4 0 0 1 .3-8 5.5 5.5 0 0 1 10.4 1.6A3.4 3.4 0 0 1 18 19z" fill="#B9C4D0"/>',
-  partlyNight: '<path d="M14 8.5A4.5 4.5 0 0 1 9.6 4a5.5 5.5 0 1 0 6.7 6.4 4.6 4.6 0 0 1-2.3.1z" fill="#8899BB"/>' +
-    '<path d="M8 19a4 4 0 0 1 .3-8 5.5 5.5 0 0 1 10.4 1.6A3.4 3.4 0 0 1 18 19z" fill="#B9C4D0"/>',
-  cloudy: '<path d="M7 19a4.2 4.2 0 0 1 .3-8.4 5.8 5.8 0 0 1 11 1.7A3.6 3.6 0 0 1 17.8 19z" fill="#98A6B4"/>',
-  overcast: '<path d="M7 19a4.2 4.2 0 0 1 .3-8.4 5.8 5.8 0 0 1 11 1.7A3.6 3.6 0 0 1 17.8 19z" fill="#7C8896"/>' +
-    '<path d="M4 16a3 3 0 0 1 .5-6 4.5 4.5 0 0 1 3-2.6" fill="none" stroke="#9AA6B2" stroke-width="1.5"/>',
-  rain: '<path d="M7 15.5a4.2 4.2 0 0 1 .3-8.4 5.8 5.8 0 0 1 11 1.7 3.6 3.6 0 0 1-.5 6.7z" fill="#8FA0AF"/>' +
-    '<g stroke="#2F7FB5" stroke-width="2" stroke-linecap="round">' +
-    '<path d="M9 18l-1 3M13 18l-1 3M17 18l-1 3"/></g>',
-  heavyRain: '<path d="M7 15.5a4.2 4.2 0 0 1 .3-8.4 5.8 5.8 0 0 1 11 1.7 3.6 3.6 0 0 1-.5 6.7z" fill="#6E7E8C"/>' +
-    '<g stroke="#1D63A8" stroke-width="2.2" stroke-linecap="round">' +
-    '<path d="M8 17.5l-1.6 4M12 17.5l-1.6 4M16 17.5l-1.6 4M20 17.5l-1.6 4"/></g>',
-  snow: '<path d="M7 15.5a4.2 4.2 0 0 1 .3-8.4 5.8 5.8 0 0 1 11 1.7 3.6 3.6 0 0 1-.5 6.7z" fill="#9BA9B7"/>' +
-    '<g stroke="#4B62B0" stroke-width="1.8" stroke-linecap="round">' +
-    '<path d="M9 18.5v3M7.7 20h2.6M14 18.5v3M12.7 20h2.6"/></g>',
-  mixed: '<path d="M7 15.5a4.2 4.2 0 0 1 .3-8.4 5.8 5.8 0 0 1 11 1.7 3.6 3.6 0 0 1-.5 6.7z" fill="#8FA0AF"/>' +
-    '<g stroke="#2F7FB5" stroke-width="2" stroke-linecap="round"><path d="M9 18l-1 3"/></g>' +
-    '<g stroke="#4B62B0" stroke-width="1.8" stroke-linecap="round">' +
-    '<path d="M15 18.5v3M13.7 20h2.6"/></g>',
+/* ---------------- icons ---------------- */
+const PT={rain:'Rain',snow:'Snow',mixed:'Mix'};
+const ICONS={
+  clear:'<circle cx="12" cy="12" r="5" fill="#E0A23C"/><g stroke="#E0A23C" stroke-width="2" stroke-linecap="round"><path d="M12 1.5v2.5M12 20v2.5M1.5 12H4M20 12h2.5M4.5 4.5l1.8 1.8M17.7 17.7l1.8 1.8M19.5 4.5l-1.8 1.8M6.3 17.7l-1.8 1.8"/></g>',
+  clearN:'<path d="M17 13.5A6.5 6.5 0 0 1 10.5 7c0-1.2.3-2.3.9-3.2A8 8 0 1 0 20.2 15c-1 .3-2.1.5-3.2.5z" fill="#93A6C4"/>',
+  partly:'<circle cx="9" cy="9" r="4" fill="#E0A23C"/><g stroke="#E0A23C" stroke-width="1.5" stroke-linecap="round"><path d="M9 2v2M2 9h2M4 4l1.3 1.3M14 4l-1.3 1.3"/></g><path d="M8 19a4 4 0 0 1 .3-8 5.5 5.5 0 0 1 10.4 1.6A3.4 3.4 0 0 1 18 19z" fill="#AEBBC6"/>',
+  partlyN:'<path d="M14 8.5A4.5 4.5 0 0 1 9.6 4a5.5 5.5 0 1 0 6.7 6.4 4.6 4.6 0 0 1-2.3.1z" fill="#93A6C4"/><path d="M8 19a4 4 0 0 1 .3-8 5.5 5.5 0 0 1 10.4 1.6A3.4 3.4 0 0 1 18 19z" fill="#AEBBC6"/>',
+  cloudy:'<path d="M7 19a4.2 4.2 0 0 1 .3-8.4 5.8 5.8 0 0 1 11 1.7A3.6 3.6 0 0 1 17.8 19z" fill="#8D9BA8"/>',
+  overcast:'<path d="M7 19a4.2 4.2 0 0 1 .3-8.4 5.8 5.8 0 0 1 11 1.7A3.6 3.6 0 0 1 17.8 19z" fill="#6F7C89"/>',
+  rain:'<path d="M7 15.5a4.2 4.2 0 0 1 .3-8.4 5.8 5.8 0 0 1 11 1.7 3.6 3.6 0 0 1-.5 6.7z" fill="#8A99A8"/><g stroke="#2E7CB0" stroke-width="2" stroke-linecap="round"><path d="M9 18l-1 3.2M13 18l-1 3.2M17 18l-1 3.2"/></g>',
+  heavy:'<path d="M7 15.5a4.2 4.2 0 0 1 .3-8.4 5.8 5.8 0 0 1 11 1.7 3.6 3.6 0 0 1-.5 6.7z" fill="#6E7E8C"/><g stroke="#1D63A8" stroke-width="2.2" stroke-linecap="round"><path d="M8 17.5l-1.6 4M12 17.5l-1.6 4M16 17.5l-1.6 4M20 17.5l-1.6 4"/></g>',
+  snow:'<path d="M7 15.5a4.2 4.2 0 0 1 .3-8.4 5.8 5.8 0 0 1 11 1.7 3.6 3.6 0 0 1-.5 6.7z" fill="#9AA8B6"/><g stroke="#4A61AF" stroke-width="1.8" stroke-linecap="round"><path d="M9 18.4v3M7.7 19.9h2.6M14 18.4v3M12.7 19.9h2.6"/></g>',
+  mixed:'<path d="M7 15.5a4.2 4.2 0 0 1 .3-8.4 5.8 5.8 0 0 1 11 1.7 3.6 3.6 0 0 1-.5 6.7z" fill="#8A99A8"/><g stroke="#2E7CB0" stroke-width="2" stroke-linecap="round"><path d="M9 18l-1 3.2"/></g><g stroke="#4A61AF" stroke-width="1.8" stroke-linecap="round"><path d="M15 18.4v3M13.7 19.9h2.6"/></g>'
 };
-
-function wxIcon(r, lat, lon){
-  const day = isDaylight(r.time, lat, lon);
-  const c = r.cloudPct;
-  let key;
-  if ((r.precipIn || 0) > 0 && r.ptype && r.ptype !== 'none'){
-    if (r.ptype === 'snow') key = 'snow';
-    else if (r.ptype === 'mixed') key = 'mixed';
-    else key = (r.precipIn >= 0.1) ? 'heavyRain' : 'rain';
-  } else if (!Number.isFinite(c)) {
-    key = day ? 'clearDay' : 'clearNight';
-  } else if (c >= 88) key = 'overcast';
-  else if (c >= 62) key = 'cloudy';
-  else if (c >= 25) key = day ? 'partlyDay' : 'partlyNight';
-  else key = day ? 'clearDay' : 'clearNight';
-  return '<svg class="wxIcon" viewBox="0 0 24 24" aria-hidden="true">' +
-         ICON_SVG[key] + '</svg>';
+/* Rough solar elevation. A sun icon at 2 AM in October would be nonsense,
+   and in Alaska the answer swings from all day to none of it. */
+function isDay(d,lat,lon){
+  if(!Number.isFinite(lat)) return true;
+  const rad=Math.PI/180, start=Date.UTC(d.getUTCFullYear(),0,0);
+  const doy=Math.floor((d.getTime()-start)/86400000);
+  const frac=d.getUTCHours()+d.getUTCMinutes()/60;
+  const dec=23.44*rad*Math.sin(2*Math.PI*(doy-81)/365);
+  const ha=(frac+lon/15-12)*15*rad;
+  const el=Math.asin(Math.sin(lat*rad)*Math.sin(dec)+Math.cos(lat*rad)*Math.cos(dec)*Math.cos(ha));
+  return el > -6*rad;
+}
+function iconFor(r,lat,lon){
+  const day=isDay(r.time,lat,lon), c=r.cloudPct;
+  let k;
+  if((r.precipIn||0)>0 && r.ptype && r.ptype!=='none'){
+    k = r.ptype==='snow'?'snow' : r.ptype==='mixed'?'mixed' : (r.precipIn>=0.1?'heavy':'rain');
+  } else if(!Number.isFinite(c)) k = day?'clear':'clearN';
+  else if(c>=88) k='overcast';
+  else if(c>=62) k='cloudy';
+  else if(c>=25) k=day?'partly':'partlyN';
+  else k=day?'clear':'clearN';
+  return '<svg class="ci" viewBox="0 0 24 24">'+ICONS[k]+'</svg>';
 }
 
-/* Rough solar elevation. Good to a degree or so, which is all we need to
-   decide between a sun and a moon. Matters in Alaska, where the answer
-   swings from all day to none of it. */
-function isDaylight(date, lat, lon){
-  if (!Number.isFinite(lat)) return true;
-  const rad = Math.PI / 180;
-  const start = Date.UTC(date.getUTCFullYear(), 0, 0);
-  const doy = Math.floor((date.getTime() - start) / 86400000);
-  const frac = date.getUTCHours() + date.getUTCMinutes() / 60;
-  const decl = 23.44 * rad * Math.sin(2 * Math.PI * (doy - 81) / 365);
-  const hourAngle = (frac + lon / 15 - 12) * 15 * rad;
-  const elev = Math.asin(Math.sin(lat * rad) * Math.sin(decl) +
-    Math.cos(lat * rad) * Math.cos(decl) * Math.cos(hourAngle));
-  return elev > -6 * rad;      // civil twilight counts as day
+/* ---------------- rendering ---------------- */
+const FRZ_SENTINEL=6350;   /* encoder's "above the sampled column" */
+function kft(m){
+  if(m>=FRZ_SENTINEL) return '>20k';
+  return (Math.round(m*3.28084/100)/10).toFixed(1)+'k';
 }
-
-function weatherRow(h,r,levelName){
-  const w=r.windMph===0?'Calm':(r.windDir||'')+' '+wind(r.windMph||0)+(Number.isFinite(r.gustMph)&&r.gustMph-(r.windMph||0)>=6?' <span class="gust">gusts '+wind(r.gustMph)+'</span>':'');
-  const arrow=r.windMph===0?'·':windArrow(r.windDir);
-  const parts=[];
-  if((r.precipIn||0)>0) parts.push('<span class="pill '+(r.ptype||'rain')+'">'+(PTYPE_WORD[r.ptype]||'Precip')+' '+precip(r.precipIn)+'</span>');
-  if(Number.isFinite(r.cloudPct)) parts.push(cloudLabel(r.cloudPct));
-  if(!parts.length) parts.push('No precipitation');
-  const sub=[];
-  if(Number.isFinite(r.frzLevelM)) sub.push(levelName+' '+elev(r.frzLevelM)+(r.frzLevelM<=h.elevM?' · at ground':''));
-  LEVELS.forEach(lv=>{
-    if(Number.isFinite(r[lv.key+'Mph']))
-      sub.push(levelLabel(lv)+' '+r[lv.key+'Dir']+' '+wind(r[lv.key+'Mph']));
+function ft100(m){ return (Math.round(m*3.28084/100)*100).toLocaleString(); }
+function fmtFull(d){
+  return d.toLocaleString([], {weekday:'short', month:'short', day:'numeric',
+                               hour:'numeric', minute:'2-digit'});
+}
+function flatten(h,segs){
+  const rows=[];
+  segs.forEach(function(g,gi){
+    g.steps.forEach(function(s,i){
+      const o=Object.assign({},s);
+      o.time=stepTime(h,g,i); o.src=g.src; o.segIndex=gi;
+      rows.push(o);
+    });
   });
-  return '<div class="wxrow"><div class="wxTime">'+fmtTime(r.time)+'</div><div class="wxTemp">'+temp(r.tempF)+wxIcon(r,h.lat,h.lon)+'</div><div class="wxMain"><div class="wxWind"><span class="windArrow">'+arrow+'</span>'+w+'</div><div class="wxLine">'+parts.join(' · ')+'</div>'+(sub.length?'<div class="wxSub">'+sub.join(' · ')+'</div>':'')+'</div></div>';
+  let prev=rows.length?rows[0].segIndex:0;
+  rows.forEach(function(r){ r.newSrc = r.segIndex!==prev; prev=r.segIndex; });
+  return rows;
 }
-function footerStats(rows){
-  const total=rows.reduce((a,r)=>a+(r.precipIn||0),0);
-  let ridge='';
-  LEVELS.forEach(lv=>{
-    const pk=maxBy(rows.filter(r=>Number.isFinite(r[lv.key+'Mph'])),r=>r[lv.key+'Mph']);
-    if(pk) ridge+=(ridge?'<br>':'')+'Wind at '+levelLabel(lv)+' peaks <b>'+
-      pk[lv.key+'Dir']+' '+wind(pk[lv.key+'Mph'])+'</b> near '+fmtFull(pk.time);
+
+function render(h,segs){
+  const rows=flatten(h,segs);
+  $('fcEmpty').hidden=true;
+  const temps=rows.map(function(r){return r.tempF;});
+  const lo=Math.min.apply(null,temps), hi=Math.max.apply(null,temps);
+
+  let html='<div class="panel">';
+  const srcs=segs.map(function(g){return g.src;}).filter(function(v,i,a){return a.indexOf(v)===i;}).join(' + ');
+  const hours = rows.length>1
+    ? Math.round((rows[rows.length-1].time-rows[0].time)/3600000)+' H AHEAD' : '';
+  html+='<div class="hdr"><b>'+srcs+'</b> RUN '+fmtFull(h.runTime).toUpperCase()+
+    '<br>'+h.lat.toFixed(4)+', '+h.lon.toFixed(4)+' \u00B7 GROUND '+
+    ft100(h.elevM)+' FT \u00B7 '+hours+'</div>';
+
+  const W=560,H=62;
+  const pts=temps.map(function(v,i){
+    return [10+i*(W-20)/Math.max(1,temps.length-1),
+            H-9-((v-lo)/((hi-lo)||1))*(H-24)];
   });
-  return '<div class="footerStats">Total precipitation: <b>'+precip(total)+'</b>'+(ridge?'<br>'+ridge:'')+'</div><div class="legend">Wind arrows point where the wind is traveling; the compass abbreviation states where it comes from. Times use this phone\'s local time. Winds aloft are interpolated to 3,000, 6,000 and 10,000 ft above sea level, and only the HRRR-AK model provides them. Later forecast segments may use coarser data.</div>';
+  const path=pts.map(function(p,i){return (i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1);}).join(' ');
+  const area=path+' L'+pts[pts.length-1][0].toFixed(1)+' '+H+' L'+pts[0][0].toFixed(1)+' '+H+' Z';
+  html+='<svg class="spark" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'+
+    '<path d="'+area+'" fill="rgba(226,160,63,.13)"/>'+
+    '<path d="'+path+'" fill="none" stroke="#E2A03F" stroke-width="2"/>'+
+    '<text x="10" y="12" fill="#7C8E92" font-size="10" font-family="monospace">'+hi+'\u00B0</text>'+
+    '<text x="10" y="'+(H-1)+'" fill="#7C8E92" font-size="10" font-family="monospace">'+lo+'\u00B0</text></svg>';
+
+  const frz=rows.map(function(r){return r.frzLevelM;}).filter(function(v){return v!==undefined;});
+  if(frz.length){
+    const min=Math.min.apply(null,frz), below=min<=h.elevM;
+    html+='<div class="flag'+(below?' red':'')+'">'+(below
+      ? 'FREEZING LEVEL REACHES YOUR GROUND. SNOW AND REFREEZE LIKELY.'
+      : 'FREEZING LEVEL LOWEST '+ft100(min)+' FT, ABOUT '+
+        ft100(min-h.elevM)+' FT OVERHEAD.')+'</div>';
+  }
+  const gusty=rows.filter(function(r){return Number.isFinite(r.gustMph);});
+  if(gusty.length){
+    const pk=gusty.reduce(function(a,b){return b.gustMph>a.gustMph?b:a;});
+    html+='<div class="flag ice">SURFACE GUSTS PEAK '+pk.gustMph+' MPH '+pk.windDir+
+      ' NEAR '+fmtFull(pk.time).toUpperCase()+'.</div>';
+  }
+  const key = rows.some(function(r){return Number.isFinite(r.w10kMph);}) ? 'w10k'
+            : rows.some(function(r){return Number.isFinite(r.w5kMph);}) ? 'w5k' : null;
+  if(key){
+    const lab = key==='w10k' ? '10,000 FT' : '5,000 FT';
+    const cand=rows.filter(function(r){return Number.isFinite(r[key+'Mph']);});
+    const pk=cand.reduce(function(a,b){return b[key+'Mph']>a[key+'Mph']?b:a;});
+    html+='<div class="flag ice">WIND AT '+lab+' PEAKS '+pk[key+'Mph']+' MPH '+
+      pk[key+'Dir']+' NEAR '+fmtFull(pk.time).toUpperCase()+'.</div>';
+  }
+  html+='</div>';
+  html+=chart(h,rows);
+  $('fcOut').innerHTML=html;
 }
 
-// Winds aloft come already interpolated to these heights by the backend,
-// so the labels are exact rather than approximations of a pressure level.
-const LEVELS = [
-  { key:'w3k', ft:3000, m:914  },
-  { key:'w6k', ft:6000, m:1829 },
-  { key:'w9k', ft:9000, m:2743 }
-];
-function levelLabel(lv){
-  return units === 'us' ? lv.ft.toLocaleString() + ' ft'
-                        : lv.m.toLocaleString() + ' m';
-}
-function upperAt(r, lv){ return r[lv.key + 'Mph']; }
+/* Variables as rows, time as columns, scrolling sideways. The label column
+   is sticky so you never lose track of which row you are reading. */
+function chart(h,rows){
+  const hasAloft3=rows.some(function(r){return Number.isFinite(r.w3kMph);});
+  const hasAloft1=rows.some(function(r){return Number.isFinite(r.w5kMph);});
+  const hasGust=rows.some(function(r){return Number.isFinite(r.gustMph);});
 
-// Ground elevation is transmitted to the metre, unlike freezing level,
-// so it does not need the same coarse rounding.
-function elevPrecise(m){
-  return units === 'us' ? (Math.round(m * 3.28084 / 10) * 10).toLocaleString() + ' ft'
-                        : Math.round(m).toLocaleString() + ' m';
-}
-function temp(f){ return units==='us'?Math.round(f)+'°F':Math.round((f-32)*5/9)+'°C'; }
-function wind(mph){ return units==='us'?Math.round(mph)+' mph':Math.round(mph*1.60934)+' km/h'; }
-function precip(inches){ return units==='us'?inches.toFixed(2)+' in':Math.round(inches*25.4)+' mm'; }
-// Freezing level arrives in 50 m steps, so round the display to match.
-// Showing 5,741 ft would imply a precision the message never carried.
-// The encoder writes 6350 m to mean "freezing level is above the part of
-// the column the model sampled", which happens on warm summer days. Show
-// that as a bound, never as a number that looks measured.
-const FRZ_SENTINEL=6350;
-function elev(m){
-  if(m>=FRZ_SENTINEL) return units==='us'?'above 20,000 ft':'above 6,000 m';
-  return units==='us'
-    ? (Math.round(m*3.28084/100)*100).toLocaleString()+' ft'
-    : (Math.round(m/50)*50).toLocaleString()+' m';
-}
-function fmtTime(d){ return d.toLocaleTimeString([], {hour:'numeric'}); }
-function fmtDate(d){ return d.toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'}); }
-function fmtDay(d){ return d.toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'}); }
-function fmtFull(d){ return d.toLocaleString([], {weekday:'short',month:'short',day:'numeric',hour:'numeric'}); }
-function dateKey(d){ return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
-function relativeTime(d){
-  if(!d||isNaN(d)) return 'unknown'; const m=Math.max(0,Math.round((Date.now()-d.getTime())/60000));
-  if(m<2) return 'just now'; if(m<60) return m+' min ago'; const h=Math.round(m/60); if(h<48) return h+' h ago'; return Math.round(h/24)+' d ago';
-}
-function cloudLabel(p){ if(p<=15)return'Clear';if(p<=35)return'Mostly clear';if(p<=65)return'Partly cloudy';if(p<=85)return'Mostly cloudy';return'Overcast'; }
-function cloudSummary(rows){
-  const vals=rows.map(r=>r.cloudPct).filter(Number.isFinite); return vals.length?cloudLabel(Math.max(...vals)):'Not sent';
-}
-function dominantType(rows){
-  const sums={rain:0,snow:0,mixed:0};rows.forEach(r=>{if(sums[r.ptype]!==undefined)sums[r.ptype]+=r.precipIn||0;});
-  return Object.entries(sums).sort((a,b)=>b[1]-a[1])[0][0];
-}
-function windArrow(dir){ const i=DIR_INDEX[dir]; return i===undefined?'·':TRAVEL_ARROWS[i]; }
-function maxBy(arr,fn){ if(!arr.length)return null;return arr.reduce((a,b)=>fn(b)>fn(a)?b:a); }
-function minBy(arr,fn){ if(!arr.length)return null;return arr.reduce((a,b)=>fn(b)<fn(a)?b:a); }
-function sentenceList(items){ if(items.length===1)return items[0];if(items.length===2)return items[0]+' and '+items[1];return items.slice(0,-1).join(', ')+', and '+items[items.length-1]; }
+  const cell=function(r,inner,cls){
+    const c=((cls||'')+(r.newSrc?' newsrc':'')).trim();
+    return '<td'+(c?' class="'+c+'"':'')+'>'+inner+'</td>';
+  };
+  const line=function(label,cls,fn){
+    return '<tr class="'+cls+'"><th class="rl">'+label+'</th>'+
+      rows.map(fn).join('')+'</tr>';
+  };
+  const arrow=function(deg,val){
+    return '<span class="ar" style="transform:rotate('+(deg||0)+'deg)">\u2191</span> '+val;
+  };
 
-setTier(tier); setBasic(basicVariant); setModel(model); updatePrefs(); restoreLast();
-if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+  let day='';
+  const dayCells=rows.map(function(r){
+    const d=r.time.toLocaleDateString([], {weekday:'short', month:'short', day:'numeric'});
+    const label = d!==day ? d.toUpperCase() : '';
+    day=d;
+    return '<td'+(r.newSrc?' class="newsrc"':'')+'>'+label+'</td>';
+  }).join('');
+
+  let t='<div class="chartBox"><div class="scroller"><table class="ch">';
+  t+='<tr class="day"><th class="rl"></th>'+dayCells+'</tr>';
+  t+=line('Time','hour',function(r){
+    return cell(r, r.time.toLocaleTimeString([], {hour:'numeric'}).replace(/\s/g,''));});
+  t+=line('Sky','sky',function(r){ return cell(r, iconFor(r,h.lat,h.lon)); });
+  t+=line('Temp \u00B0F','temp',function(r){ return cell(r, r.tempF); });
+  t+=line('Wind mph','wind',function(r){
+    return cell(r, r.windMph===0 ? '<span class="zero">calm</span>'
+                                 : arrow(r.windDirDeg, r.windMph)); });
+  t+=line('From','wind',function(r){
+    return cell(r, r.windMph===0 ? '<span class="zero">\u2014</span>' : (r.windDir||'')); });
+  if(hasGust) t+=line('Gusts','gust',function(r){
+    return cell(r, (Number.isFinite(r.gustMph) && r.gustMph-(r.windMph||0)>=6)
+      ? r.gustMph : '<span class="zero">\u2014</span>'); });
+  t+=line('Precip in','pcp',function(r){
+    return cell(r, (r.precipIn||0)>0 ? r.precipIn.toFixed(2).replace('0.','.')
+      : '<span class="zero">\u2014</span>', r.ptype==='snow'?'snow':''); });
+  t+=line('Type','pcp',function(r){
+    return cell(r, ((r.precipIn||0)>0 && r.ptype && r.ptype!=='none') ? PT[r.ptype]
+      : '<span class="zero">\u2014</span>', r.ptype==='snow'?'snow':''); });
+  t+=line('Freeze kft','frz',function(r){
+    return cell(r, Number.isFinite(r.frzLevelM) ? kft(r.frzLevelM)
+      : '<span class="zero">\u2014</span>'); });
+  if(hasAloft3){
+    [['w3k','3k ft'],['w6k','6k ft'],['w10k','10k ft']].forEach(function(pair){
+      t+=line(pair[1],'aloft',function(r){
+        return cell(r, Number.isFinite(r[pair[0]+'Mph'])
+          ? arrow(r[pair[0]+'DirDeg'], r[pair[0]+'Mph'])
+          : '<span class="zero">\u2014</span>'); });
+    });
+  }
+  if(hasAloft1){
+    t+=line('5k ft','aloft',function(r){
+      return cell(r, Number.isFinite(r.w5kMph)
+        ? arrow(r.w5kDirDeg, r.w5kMph) : '<span class="zero">\u2014</span>'); });
+  }
+  t+='</table></div><div class="hint"><span>scroll sideways for later hours</span>'+
+     '<span>arrows point downwind</span></div></div>';
+  return t;
+}
+
+function showTab(id,btn){
+  document.querySelectorAll('nav button').forEach(function(b){b.classList.remove('on');});
+  if(btn) btn.classList.add('on');
+  ['req','fc','dec','help'].forEach(function(s){ $(s).hidden = s!==id; });
+  window.scrollTo(0,0);
+}
+
+setTier(T); setModel($('m-'+M)); upd();
+addBox(); addBox();
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
 </script>
 </body>
 </html>

@@ -11,6 +11,14 @@ const PTYPES = ["none", "rain", "snow", "mixed"];
 const SOURCES = ["HRRR-AK", "RRFS", "Open-Meteo", "NWS", "GFS", "meteoblue", "?", "?"];
 const F = { TEMP:1, WIND:2, GUST:4, PRECIP:8, CLOUD:16, FRZ:32, UPPER:64 };
 
+// Winds aloft are reported at heights people plan around. The backend
+// interpolates model pressure levels to these before encoding.
+const UPPER_LEVELS = [
+  { key: 'w3k',  m: 914,  ft: 3000  },
+  { key: 'w6k',  m: 1829, ft: 6000  },
+  { key: 'w10k', m: 3048, ft: 10000 }
+];
+
 const PCP_TABLE = [0.0];
 for (let i = 1; i < 32; i++) {
   PCP_TABLE.push(Math.round(0.005 * Math.pow(1.20, i - 1) * 10000) / 10000);
@@ -91,17 +99,26 @@ function joinCandidates(text) {
   if (direct !== null) candidates.push(direct);
 
   // Candidate 2+: the whole thing is one blob with the parts run together.
-  // Parts 1..n-1 are all the same length, so try each plausible full size.
+  // Every part is the same full length except exactly one short one, which
+  // is the last part as sent but can land anywhere once the messages are
+  // pasted out of order. Try each full-part size with the short part in
+  // each possible position and let the checksum settle it.
   if (total > 1) {
     const blob = chunks.join("");
     for (let size = Math.ceil(blob.length / total); size < blob.length; size++) {
       const tail = blob.length - size * (total - 1);
       if (tail < 1 || tail > size) continue;
-      const pieces = [];
-      for (let i = 0; i < total - 1; i++) pieces.push(blob.slice(i * size, (i + 1) * size));
-      pieces.push(blob.slice(size * (total - 1)));
-      const joined = assemble(pieces);
-      if (joined !== null && candidates.indexOf(joined) === -1) candidates.push(joined);
+      for (let shortAt = 0; shortAt < total; shortAt++) {
+        const pieces = [];
+        let cursor = 0;
+        for (let i = 0; i < total; i++) {
+          const len = (i === shortAt) ? tail : size;
+          pieces.push(blob.slice(cursor, cursor + len));
+          cursor += len;
+        }
+        const joined = assemble(pieces);
+        if (joined !== null && candidates.indexOf(joined) === -1) candidates.push(joined);
+      }
     }
   }
 
@@ -190,10 +207,12 @@ function decodeCode(code) {
       if (seg.fields & F.CLOUD) st.cloudPct = Math.round(read(3) / 7 * 100);
       if (seg.fields & F.FRZ) st.frzLevelM = read(7) * 50;
       if (seg.fields & F.UPPER) {
-        st.w850Mph = read(6);
-        st.w850Dir = DIRS[read(4)];
-        st.w700Mph = read(6);
-        st.w700Dir = DIRS[read(4)];
+        for (const lv of UPPER_LEVELS) {
+          st[lv.key + 'Mph'] = read(6);
+          const d = read(4);
+          st[lv.key + 'Dir'] = DIRS[d];
+          st[lv.key + 'DirDeg'] = d * 22.5;
+        }
       }
       seg.steps.push(st);
     }
@@ -229,5 +248,5 @@ function stepTime(header, seg, index) {
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { decode, joinParts, stepTime, F, ALPHABET };
+  module.exports = { decode, joinParts, stepTime, F, ALPHABET, UPPER_LEVELS };
 }

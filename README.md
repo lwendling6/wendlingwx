@@ -71,12 +71,10 @@ does the computing, Gmail and Google Apps Script handle the mail, and the
 weather data is public. There is nothing to pay for and no server to keep
 running.
 
-See **[SETUP.md](SETUP.md)** for a click-by-click guide. It assumes no
-prior experience with any of these services.
-
 You will need: a Garmin inReach with an active plan, a GitHub account, and
 a spare Gmail account.
 
+The next improvement beyond my skill level would be to expand to including satellite text messages (SMS) or iMessages. 
 ## Honest limitations
 
 **This is a hobby tool with no guarantee.** It depends on free tiers of

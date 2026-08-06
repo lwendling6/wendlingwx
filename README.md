@@ -1,263 +1,242 @@
-[README.md](https://github.com/user-attachments/files/30800811/README.md)
+[README(1).md](https://github.com/user-attachments/files/30801068/README.1.md)
 # WendlingWx
 
 **Satellite weather forecasts for the Alaska backcountry.**
 
-Text a request from your inReach. Get back a full high resolution forecast
-for your exact spot, packed into 1 to 3 short messages. Decode it on your
-phone with no cell service.
+Text a request from your Garmin inReach. Get back a full high resolution
+forecast for your exact spot, packed into 1 to 3 short messages. Read it on
+your phone with no cell service.
 
-Built by Logan Wendling. Free to use, free to run, free to copy.
+Built by Logan Wendling. Free to use.
 
 ---
 
-## What it does
+## What it is
 
 Weather services that send forecasts to satellite messengers usually give
-you a few lines of text: a temperature, a wind, maybe a chance of rain.
-That is all that fits in 160 characters of plain English.
+you a few lines of plain text: a temperature, a wind, maybe a chance of
+rain. That is all that fits in 160 characters.
 
 WendlingWx compresses the forecast into a dense code instead, then unpacks
-it on your phone. The same 160 characters that would hold four numbers as
-text instead hold **sixteen time steps**, each with temperature, wind,
-gusts, precipitation amount and type, cloud cover, freezing level, and wind
-aloft.
+it in an app on your phone. The same 160 characters that would hold four
+numbers as text instead hold **sixteen time steps**, each with temperature,
+wind, gusts, precipitation amount and type, cloud cover, freezing level,
+and wind aloft.
 
-The decoder is a small web page that works entirely offline once installed.
+You need a Garmin inReach with an active messaging plan. Nothing else.
 
-## Where the data comes from
+---
 
-**HRRR-AK**, NOAA's 3 km High-Resolution Rapid Refresh model for Alaska.
-Fine enough to resolve terrain, which matters enormously in mountains: the
-difference between a valley and the ridge above it, inlet channeling, gap
-winds. Covers 48 hours.
+## 1. Install the app, before you leave
 
-**Open-Meteo**, a blend of global models, for days 3 to 5. Coarser, around
-11 to 13 km. Good for "is a system coming," poor for timing.
+The app is a web page that works completely offline once installed. Do this
+at home, on wifi, not at the trailhead.
 
-**National Weather Service forecast grids**, which are model output
-adjusted by Alaska forecasters who know the local biases. Available for all
-five days, with different failure modes than raw model output.
+**On iPhone:**
 
-Ground elevation comes from the Copernicus GLO-90 dataset, and is used to
-correct temperature from the model's smoothed terrain to your actual
-height, using the model's own vertical temperature profile so inversions
-come out right rather than backwards.
+1. Open **https://lwendling6.github.io/wendlingwx/** in **Safari**. It has
+   to be Safari; Chrome on iOS cannot install web apps.
+2. Tap the **Share** button, the square with an arrow.
+3. Scroll down and tap **Add to Home Screen**, then **Add**.
+4. Close Safari and open WendlingWx from your home screen once, so it can
+   save itself for offline use.
 
-## What you get
+**On Android:** open the same link in Chrome, tap the three-dot menu, and
+choose **Add to Home screen** or **Install app**.
 
-| Detail | Messages | HRRR-AK | Blend 5-day | NWS 5-day |
+### Check that offline works
+
+This matters more than anything else on this page. Turn on **airplane
+mode**, fully close the app, and reopen it from the home screen. It should
+load normally and the Decode tab should still work.
+
+If it does not load, open it once more with signal and try again. **Do not
+head out until this test passes.** An app that quietly needs the network is
+useless where you will be using it.
+
+---
+
+## 2. Save the address on your inReach
+
+Add this as a contact on your inReach, or in the Garmin Messenger app,
+whichever you send from:
+
+```
+wendlingwx@gmail.com
+```
+
+Do this at home.
+
+---
+
+## 3. Send a request
+
+1. Open WendlingWx and stay on the **Request** tab.
+2. Pick your **reply detail**: Basic, Standard or Full. This is how many
+   messages come back, 1, 2 or 3. Each one counts against your inReach
+   plan, so Basic is the cheap habit.
+3. Pick your **source**: HRRR-AK, the 5-day blend, or NWS. The blue line
+   under the buttons tells you exactly what that combination gives you
+   before you spend anything.
+4. Tap **Use current location**. Step into the open if it fails. GPS works
+   fine in airplane mode. If you would rather type coordinates, tap **Enter
+   coordinates manually**.
+5. Tap **Copy message**.
+6. Open your inReach or the Garmin app, start a new message to
+   `wendlingwx@gmail.com`, paste, and send.
+
+**Leave location sharing turned on if you can.** The service then uses the
+inReach's own GPS coordinates, which are better than a phone fix under
+trees. With sharing off it falls back to the coordinates in the message
+text, and everything still works.
+
+Then wait. **Ten to twenty minutes is normal.** The satellite link is slow
+in both directions and the weather data takes several minutes to pull.
+
+### Typing a request by hand
+
+If the app is not handy, any message in this shape works:
+
+```
+WX <latitude> <longitude> [5day|nws] [basic|full]
+```
+
+For example `WX 61.1045 -149.8784 5day basic`. With no extra words you get
+HRRR-AK at Standard detail, which is two messages back.
+
+---
+
+## 4. Read the reply
+
+The reply arrives as 1 to 3 messages of jumbled letters. That is normal.
+
+1. Copy the first reply message.
+2. Open WendlingWx, tap the **Decode** tab, and paste it into **Message 1**.
+3. Copy the next reply and paste it into **Message 2**, and so on. Use
+   **+ Add another message** if you need a third box.
+4. Order does not matter. Paste them in whatever order is convenient.
+5. Tap **Read forecast**.
+
+If it says a part is missing, one of the messages has not arrived yet.
+Wait and try again once it does. If it says the checksum failed, one
+message was cut off or garbled in copying, so re-copy each one in full.
+
+---
+
+## 5. What the choices mean
+
+| Detail | Messages | HRRR-AK | 5-day blend | NWS 5-day |
 |---|---|---|---|---|
-| **Basic** | 1 | 3 h steps, 48 h | not available | not available |
-| **Standard** | 2 | 2 h steps, 48 h | 3 h to 48 h, then 6 h to day 5 | 2 h to 48 h, then 6 h to day 5 |
-| **Full** | 3 | hourly 24 h, then 2 h to 48 h | 2 h to 48 h, then 3 h to day 5 | hourly to 48 h, then 4 h to day 5 |
+| **Basic** | 1 | every 3 h for 48 h | not available | not available |
+| **Standard** | 2 | every 2 h for 48 h | 3 h to 48 h, then 6 h to day 5 | 2 h to 48 h, then 6 h to day 5 |
+| **Full** | 3 | hourly for 24 h, then 2 h to 48 h | 2 h to 48 h, then 3 h to day 5 | hourly to 48 h, then 4 h to day 5 |
 
-Every step carries the same fields. Length buys time resolution, not more
-information per step. Basic is HRRR-AK only, because one message cannot
-carry five days at any resolution worth having.
+Every time step carries the same information. A longer reply buys you finer
+time resolution, not more detail per step.
 
-**Winds aloft** come only from HRRR-AK, and therefore only within 48 hours.
-Standard and Full carry three levels, 3,000, 6,000 and 10,000 ft above sea
-level, interpolated from the model's pressure levels to those true heights
-rather than relabeled pressure surfaces. Basic squeezes to a single
-5,000 ft level, which is what fits in one message.
+**HRRR-AK** is NOAA's 3 km Alaska model. It is fine enough to resolve
+terrain, which matters enormously in mountains: inlet channeling, gap
+winds, the difference between a valley and the ridge above it. Best for
+anything inside two days, and the only source that includes winds aloft.
 
-## Running your own
+**5-day blend** uses HRRR-AK for the first 48 hours, then a global model
+for days 3 to 5 at roughly 11 to 13 km. Fine for "is a system coming,"
+poor for timing. Planning, not commitment.
 
-Everything runs on free tiers: GitHub Pages serves the app, GitHub Actions
-does the computing, Gmail and Google Apps Script handle the mail, and the
-weather data is public. There is nothing to pay for and no server to keep
-running.
+**NWS 5-day** is the National Weather Service forecast grids, model output
+adjusted by Alaska forecasters who know the local biases. It fails in
+different ways than raw model output, so when it and HRRR-AK agree your
+confidence should go up. That is exactly why both are offered.
 
-You will need: a Garmin inReach with an active plan, a GitHub account, and
-a spare Gmail account.
+**Basic is HRRR-AK only.** One message cannot carry five days at any
+resolution worth having, so the other two grey out when you pick it.
 
-The next improvement beyond my skill level would be to expand to including satellite text messages (SMS) or iMessages.
+**Winds aloft come only from HRRR-AK, and only inside 48 hours.** Standard
+and Full give you three levels, 3,000, 6,000 and 10,000 ft above sea level.
+Basic squeezes down to a single 5,000 ft level, which is what fits in one
+message.
 
-### How the pieces fit
+---
 
-```
- you, in the field
-   |  "WX 61.104498 -149.878428 5day"
-   v
- inReach --> wx Gmail inbox
-                 |  checked every 5 min by a Google Apps Script
-                 v
-              GitHub Actions, a free computer GitHub runs on demand
-                 |  downloads HRRR-AK / Open-Meteo / NWS
-                 |  packs the forecast into 1-3 coded messages
-                 v
-              posts them back through the reply link in Garmin's email
-                 |
-   you <-- satellite <--+
-   |
-   v
- WendlingWx app decodes them, fully offline
-```
+## 6. Reading the forecast
 
-Garmin does not accept email replies; their notification email says so.
-What it does contain is a link to a public page with a reply box, which
-exists so anyone you message can answer without a Garmin account. The
-service fills in that box the same way a person would, reading the two
-identifiers it needs off the page automatically.
+The plot at the top is temperature across the whole period, so you can see
+the shape of it before reading any numbers.
 
-Two repositories: a **public** one holding the app, because GitHub only
-serves free websites from public repos, and a **private** one holding the
-scripts, because run logs contain your coordinates.
+Below that is a chart you **scroll sideways**. Time runs left to right and
+variables run down. The label column on the left stays put while you
+scroll, so you always know which row you are reading.
 
-### Keys and money safety
+- **Wind arrows point the way the wind is travelling.** The compass letters
+  in the **From** row say where it is coming from.
+- **Gusts** only appear when they are meaningfully above the sustained
+  wind.
+- **Freeze** is the freezing level in thousands of feet above sea level.
+  Compare it to your own elevation, shown in the header.
+- **3k / 6k / 10k ft** are the winds aloft, in mph, at those heights above
+  sea level.
+- An **amber vertical line** marks where the data source changes, for
+  example HRRR-AK handing off to the global model on day 3. Trust
+  everything right of that line less.
 
-You create exactly two credentials.
+The coloured bars above the chart flag the things most likely to change a
+decision: how low the freezing level gets, the peak surface gusts, and the
+peak wind aloft.
 
-A **GitHub fine-grained token**, scoped to the single backend repository
-with only the Contents permission. If it leaked, the worst anyone could do
-is trigger forecast runs or edit that one private repo.
+---
 
-A **Gmail app password**, on the dedicated wx account. App passwords only
-work for mail protocols and cannot log into the account.
+## 7. Keeping the app updated
 
-The rules that keep them safe: the token goes only into Apps Script's
-Script Properties, the app password goes only into the backend repo's
-Actions Secrets, and neither ever appears in a file, a commit, or the app.
-No service here has a credit card attached, so nothing can charge you. The
-worst possible abuse is someone wasting free Action minutes.
+The app updates itself whenever you open it with a signal, so usually there
+is nothing to do.
 
-To revoke: GitHub > Settings > Developer settings > Personal access tokens
-> delete. Google account > Security > App passwords > remove.
+To confirm which version you have, open the **Help** tab and look at the
+version line at the bottom. If you ever suspect the app is stale, delete
+the home screen icon, open the link in Safari again, and re-add it.
 
-### Part 1: the backend
+---
 
-1. On GitHub, **+** > **New repository**. Name it `wendlingwx-backend`,
-   set **Private**, create it.
-2. Click **creating a new file**. Create each file below one at a time,
-   **typing the full path** into the filename box. The slashes create the
-   folders. Do not use the upload button; it flattens folders.
+## 8. If something goes wrong
 
-   | Path to type | Contents |
-   |---|---|
-   | `.github/workflows/forecast.yml` | forecast.yml |
-   | `scripts/forecast.py` | forecast.py |
-   | `scripts/codec.py` | codec.py |
-   | `scripts/send_reply.py` | send_reply.py |
-   | `scripts/test_codec.py` | test_codec.py |
-   | `spec/FORMAT.md` | FORMAT.md |
-   | `Code.gs` | Code.gs |
+**No reply after 30 minutes.** Resend. Satellite messages do go missing
+sometimes, in both directions.
 
-3. Open the **Actions** tab. A workflow named **forecast** should appear.
-   Enable workflows if GitHub asks.
-4. **Dry run.** Actions > forecast > **Run workflow**, tick the synthetic
-   data box, leave reply_email blank, run. It should go green in 2 to 3
-   minutes, and the Build step prints the coded parts.
-5. **Real run.** Same, with synthetic data unticked. Takes 5 to 15 minutes
-   because it downloads real HRRR-AK. If it fails, open the red step and
-   read the last 30 lines; a model run that has not published yet is the
-   usual cause, so wait an hour and retry.
+**A reply that says the forecast failed.** The service hit an error, often
+a weather model that had not published yet. Wait 15 minutes and try again.
 
-### Part 2: the mail loop
+**The app says a part is missing.** One message has not arrived. Wait for
+it, then paste all of them again.
 
-1. Create a fresh Gmail account, for example `wendlingwx@gmail.com`. Use a
-   separate account, never your main one, and stay signed in as it for this
-   whole part.
-2. At myaccount.google.com > **Security**, turn on **2-Step Verification**,
-   then open **App passwords**, create one named `wendlingwx actions`, and
-   copy the 16 characters.
-3. In the backend repo: **Settings > Secrets and variables > Actions > New
-   repository secret**, twice.
+**The app says the checksum failed.** A message was garbled or cut off in
+copying. Re-copy each one completely and try again.
 
-   | Name | Value |
-   |---|---|
-   | `MAIL_ADDRESS` | the wx Gmail address |
-   | `MAIL_APP_PASSWORD` | the 16 characters, no spaces |
+**Your phone is dead.** The coded reply cannot be read without the app.
+This is the real limitation of the whole idea, and the reason it should
+supplement a plan rather than be one.
 
-4. Make the token: GitHub > avatar > **Settings** > **Developer settings** >
-   **Personal access tokens** > **Fine-grained tokens** > **Generate new
-   token**. Repository access: only `wendlingwx-backend`. Permissions >
-   Repository permissions > **Contents: Read and write**, nothing else.
-   Copy it now; it is shown once.
-5. Go to `script.google.com` > **New project**. Delete the placeholder,
-   paste in all of `Code.gs`, rename the project WendlingWx.
-6. Gear icon (**Project Settings**) > **Script properties**, add three:
-   `GITHUB_USER` (your username), `GITHUB_REPO` (`wendlingwx-backend`),
-   `GITHUB_TOKEN` (the token).
-7. Save the file. The function dropdown then populates. Choose `selfTest`,
-   press **Run**, approve the permissions. At the unverified-app screen:
-   **Advanced** > **Go to WendlingWx (unsafe)**. That warning appears for
-   all personal scripts; this is your own code.
-8. Within about 4 minutes the wx inbox receives two coded messages.
-9. Clock icon (**Triggers**) > **Add Trigger**: function `main`,
-   time-driven, minutes timer, **every 5 minutes**. Save.
-10. Test from the device. Send to the wx address:
-    `WX 61.5998 -149.1170 fake`. The word `fake` skips the download, so you
-    are testing plumbing only. Then try it for real without `fake`.
-
-**A request must contain the word WX.** Every inReach email carries a
-Lat/Lon line, so without that keyword any message you sent would trigger a
-forecast. Garmin's own bounce messages are ignored too.
-
-### Part 3: the phone app
-
-1. GitHub > **+** > **New repository**, name it `wendlingwx`, **Public**.
-2. These five files are flat with no folders, so the upload button is safe
-   here: drag in `index.html`, `codec.js`, `sw.js`, `manifest.json`,
-   `icon.svg`. Commit.
-3. **Settings > Pages** > Source: Deploy from a branch > `main` >
-   `/ (root)`. Save. After a minute it shows your URL.
-4. Open that URL in Safari on the iPhone, Share > **Add to Home Screen**.
-5. Open it once from the home screen with signal so it caches itself.
-6. **Airplane mode test, not optional.** Turn it on, close the app, reopen
-   from the home screen. It must load and decode. Do not take it to the
-   field until this passes.
-
-When you publish an update later, bump the version string in both `sw.js`
-and the Help tab of `index.html`, so you can tell at a glance whether a
-phone is running current code.
-
-## Using it
-
-1. Open the app, pick the **reply detail** and the **source**. The screen
-   states exactly what that combination gives you before you spend a
-   message.
-2. Tap **Use current location**, then **Copy message**.
-3. Send that message to your wx address from the inReach.
-4. Leave location sharing on if you can. The service then uses the
-   inReach's own coordinates, which beat a phone fix under trees. With
-   sharing off, the coordinates in the message text are used instead.
-5. Wait. Ten to twenty minutes is normal.
-6. Copy each reply message, open the **Decode** tab, paste each into its
-   own box in any order, and tap **Read forecast**.
-
-The forecast is a chart you scroll sideways: time runs left to right,
-variables run down, and the label column stays put. An amber line marks
-where the data source changes.
-
-You can also type the request by hand:
-
-```
-WX <lat> <lon> [5day|nws] [basic|full] [fake]
-```
-
-With no keywords you get HRRR-AK at Standard, which is two messages.
+---
 
 ## Honest limitations
 
-**This is a hobby tool with no guarantee.** It depends on free tiers of
-several services, any of which can change without notice.
+**This is a hobby service with no guarantee.** It runs on free tiers of
+several services, any of which can change or break without notice. There is
+no support desk and no uptime promise.
 
-**Delivery uses Garmin's public reply page**, the one their notification
-email links to, because Garmin does not accept email replies. That page is
-undocumented and has changed before. When it changes, delivery breaks until
-the code is updated.
+**Delivery depends on a Garmin page that is not documented.** Garmin does
+not accept email replies, so the service uses the reply form their
+notification email links to. That page has changed before, and when it
+changes, replies stop until the code is fixed.
 
 **Models are wrong sometimes**, especially in valleys during winter
-inversions and for precipitation timing in complex terrain. Two of the
-three options exist precisely so you can compare independent sources.
+inversions and for precipitation timing in complex terrain. That is why two
+independent sources are offered rather than one.
 
-**The coded reply is unreadable without the app.** If your phone dies, you
-have nothing. Carry knowledge of the pattern before you leave, and treat
-this as a supplement rather than a plan.
+The next improvement beyond my skill level would be to expand to including satellite text messages (SMS) or iMessages.
 
 Never bet a river crossing, a flight, or an exposed night on the ridge on a single
 forecast from anything, including this.
+
+---
 
 ## Credits
 

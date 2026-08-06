@@ -121,6 +121,13 @@ button.act:disabled{background:var(--graphite)}
 #help p,#help li{font-size:15px;color:var(--ink)}
 #help ol{padding-left:22px}
 #help li{margin:6px 0}
+.helpTable{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+.helpTable th,.helpTable td{border:1px solid var(--rule);padding:5px 6px;text-align:left}
+.helpTable th{background:rgba(11,95,115,.07);font-weight:700}
+.wxIcon{display:block;width:26px;height:26px;margin:2px auto 0}
+.msgBox{margin-bottom:10px}
+.msgBox label{margin:0 0 4px}
+.msgBox textarea{min-height:52px;font-size:13px}
 #help .warn{border-left:5px solid var(--alarm);background:var(--panel);padding:10px 14px;margin:14px 0}
 #help .credits,#help .credits li{font-size:14px;color:var(--graphite)}
 #help .credits b{color:var(--ink)}
@@ -157,12 +164,23 @@ button.act:disabled{background:var(--graphite)}
   <section id="req">
     <label>Reply length</label>
     <div class="seg">
-      <button id="sz-brief" aria-pressed="true" onclick="setSize('brief')">
-        Condensed<small>2 messages</small></button>
-      <button id="sz-full" aria-pressed="false" onclick="setSize('full')">
-        Full<small>4 messages</small></button>
+      <button id="tier-basic" aria-pressed="false" onclick="setTier('basic')">
+        Basic<small>1 msg reply</small></button>
+      <button id="tier-standard" aria-pressed="true" onclick="setTier('standard')">
+        Standard<small>2 msg reply</small></button>
+      <button id="tier-full" aria-pressed="false" onclick="setTier('full')">
+        Full<small>3 msg reply</small></button>
     </div>
-    <p class="note" id="sizeHelp"></p>
+
+    <div id="basicOpts" hidden>
+      <div class="seg">
+        <button id="bs-48" aria-pressed="true" onclick="setBasic('basic48')">
+          Cover 2 days<small>every 4 h</small></button>
+        <button id="bs-24" aria-pressed="false" onclick="setBasic('basic24')">
+          Detail 24 h<small>every 2 h</small></button>
+      </div>
+    </div>
+    <p class="note" id="tierHelp"></p>
 
     <label>Forecast</label>
     <div class="seg">
@@ -192,13 +210,12 @@ button.act:disabled{background:var(--graphite)}
       <button class="miniBtn" onclick="clearLast()">Clear</button>
     </div>
     <div id="decodeInput">
-      <label for="code">Forecast reply</label>
-      <textarea id="code" autocapitalize="off" autocorrect="off" spellcheck="false"
-        placeholder="Paste all reply messages here. Order does not matter."></textarea>
-      <div class="actionPair">
-        <button class="act secondary" onclick="pasteAndDecode()">Paste + read</button>
-        <button class="act ghost" onclick="doDecode()">Read typed text</button>
-      </div>
+      <label>Forecast reply</label>
+      <p class="note">Paste each message you received into its own box.
+      Order does not matter. Leave unused boxes empty.</p>
+      <div id="msgBoxes"></div>
+      <button class="act ghost" onclick="addBox()" id="addBoxBtn">Add another message</button>
+      <button class="act" onclick="doDecode()">Read forecast</button>
     </div>
     <button id="newDecodeBtn" class="act ghost" onclick="showDecodeInput()" hidden>Decode another reply</button>
     <p class="err" id="decErr" hidden></p>
@@ -207,54 +224,130 @@ button.act:disabled{background:var(--graphite)}
 
   <section id="help" hidden>
     <h2>What this is</h2>
-    <p>You send a short message over your satellite device. A free service pulls
-    a high resolution weather model for your exact spot, squeezes a full forecast
-    into a few text messages, and sends it back. This app builds the request and
-    reads the reply. It works offline once installed.</p>
+    <p>You text a short request from your inReach. A free service pulls a
+    high resolution weather model for your exact spot, packs a full forecast
+    into a few messages of coded letters, and sends them back. This app
+    builds the request and reads the reply. It works entirely offline once
+    installed.</p>
 
-    <h2>Before every trip</h2>
+    <h2>Which model to pick</h2>
+    <p><b>48 h HRRR-AK.</b> The highest resolution model available for
+    Alaska, on a 3 km grid, so it actually resolves terrain: inlet
+    channeling, gap winds, the difference between a valley and the ridge
+    above it. Best choice for anything inside two days. This is the only
+    option that includes winds aloft.</p>
+    <p><b>5 day.</b> HRRR-AK for the first 48 hours, then a global model
+    blend for days 3 to 5. The far days are coarse, roughly 11 to 13 km,
+    which is fine for "is a system coming" and poor for timing. Use it for
+    planning, not commitment.</p>
+    <p><b>5 day NWS.</b> The National Weather Service forecast grids, which
+    are model output adjusted by Alaska forecasters who know the local
+    biases. Different failure modes than raw model output. When it and
+    HRRR-AK agree, trust goes up, and that is exactly why both exist here.
+    No winds aloft.</p>
+
+    <h2>Which reply length to pick</h2>
+    <p>Every reply carries the same fields. Length buys time resolution, not
+    more information per step. On an inReach each message counts against
+    your plan, so Basic is the cheap habit.</p>
+    <table class="helpTable">
+      <tr><th>Choice</th><th>Messages</th><th>HRRR-AK</th><th>5 day</th><th>NWS</th></tr>
+      <tr><td>Basic, cover 2 days</td><td>1</td><td>every 4 h</td>
+        <td>6 h then 12 h</td><td>4 h then 12 h</td></tr>
+      <tr><td>Basic, detail 24 h</td><td>1</td><td>every 2 h, 24 h only</td>
+        <td>every 2 h, 24 h only</td><td>every 2 h, 24 h only</td></tr>
+      <tr><td>Standard</td><td>2</td><td>every 2 h</td>
+        <td>3 h then 6 h</td><td>2 h then 6 h</td></tr>
+      <tr><td>Full</td><td>3</td><td>hourly, then 2 h</td>
+        <td>2 h then 3 h</td><td>hourly then 4 h</td></tr>
+    </table>
+    <p class="note"><b>Winds aloft are only available from HRRR-AK, and only
+    within 48 hours.</b> They appear on every HRRR-AK segment regardless of
+    reply length, at 3,000, 6,000 and 10,000 ft above sea level. The NWS
+    option and days 3 to 5 of the 5 day option do not carry them, because
+    those sources do not provide them.</p>
+
+    <h2>Before every trip, in town</h2>
     <ol>
-      <li>Open the app in airplane mode. If it does not load, reconnect, open it once, and test again.</li>
-      <li>Send one test request from the trailhead and decode the reply.</li>
-      <li>The most recently decoded forecast is saved on this phone for offline reopening.</li>
+      <li>Open this app in airplane mode. If it does not load, open it once
+        with signal and try again. Do not leave until it loads offline.</li>
+      <li>Save the wx address as a contact on the inReach, or in the Garmin
+        app, whichever you send from.</li>
+      <li>Send one test request from the trailhead and decode the reply, so
+        you know the whole loop is alive before you need it.</li>
     </ol>
 
     <h2>Requesting a forecast</h2>
     <ol>
-      <li>Pick <b>Condensed</b> for 2 reply messages or <b>Full</b> for 4 and more time steps.</li>
-      <li>Pick HRRR-AK, HRRR plus Open-Meteo, or NWS grids.</li>
-      <li>Tap <b>Use my location</b>, copy the request, and send it to <b>wendlingwx@gmail.com</b>.</li>
-      <li>Paste every reply message into Decode. Use <b>Paste + read</b> when clipboard access works.</li>
+      <li>Pick the model and the reply length.</li>
+      <li>Tap <b>Use my location</b>. Step into the open if it fails. GPS
+        works in airplane mode.</li>
+      <li>Tap <b>Copy message</b> and send it to your wx address.</li>
+      <li>Leave location sharing on if you can. The service then uses the
+        inReach's own coordinates, which are more precise than a phone fix
+        under trees. If you keep location off, the coordinates in the
+        message text are used instead and everything still works.</li>
+      <li>Wait. Ten to twenty minutes is normal.</li>
     </ol>
 
-    <h2>Reading this display</h2>
-    <p>The top card summarizes the next 24 hours and flags major thresholds.
-    Each day can be opened or collapsed. Rows show time, temperature, surface
-    wind, precipitation, cloud cover, freezing or snow level, and ridge winds
-    when those fields are present. US or metric units can be selected at the top.</p>
+    <h2>Reading the reply</h2>
+    <ol>
+      <li>Copy each reply message.</li>
+      <li>Open <b>Decode</b> and paste each one into its own box. Order does
+        not matter. Add boxes if you asked for more than two.</li>
+      <li>Tap <b>Read forecast</b>.</li>
+    </ol>
+    <p>If it says a part is missing, one message has not arrived yet. If it
+    says the checksum failed, a message got garbled or truncated: re-copy
+    each one in full and try again.</p>
+
+    <h2>Reading the display</h2>
+    <p>Each row is one time step, with the temperature and a weather icon on
+    the left. Wind is spelled out, like "from the west-southwest at 18 mph,
+    gusts 31." Precipitation shows amount and type. The banner near the top
+    compares the freezing level to your ground elevation, and turns red when
+    it reaches you. Winds aloft, when present, sit on the small line beneath
+    each row.</p>
 
     <h2>If things go wrong</h2>
     <ol>
-      <li><b>Missing part:</b> wait for the remaining satellite message and paste everything again.</li>
-      <li><b>Checksum failed:</b> re-copy the messages completely.</li>
-      <li><b>Old forecast warning:</b> the saved model run is aging. Request a new forecast when possible.</li>
+      <li><b>No reply after 30 minutes:</b> resend. Satellite messages do go
+        missing. A reply saying the forecast failed means try again in 15
+        minutes.</li>
+      <li><b>Reply is readable text, not code:</b> the service hit an error
+        and is telling you what happened.</li>
+      <li><b>Phone dead:</b> the coded reply is unreadable without this app.
+        Treat this as a supplement, never the plan.</li>
     </ol>
 
-    <div class="warn"><b>This is a hobby service with no guarantee.</b> It depends
-    on free services and models that can be wrong, especially in mountain valleys.
-    Never base a river crossing, flight, or exposed-ridge decision on one forecast.</div>
+    <div class="warn"><b>This is a hobby service with no guarantee.</b> It
+    depends on free tiers of several services and a weather model that is
+    wrong sometimes, especially in valleys during inversions. Never bet a
+    river crossing, a flight, or an exposed ridge on a single forecast from
+    anything, including this.</div>
 
     <h2>Credits</h2>
     <p class="credits">Built by <b>Logan Wendling</b>.</p>
-    <ul class="credits">
-      <li>NOAA / NCEP HRRR-AK</li>
-      <li>Open-Meteo global model data</li>
-      <li>NOAA National Weather Service grids</li>
-      <li>Copernicus GLO-90 elevation through Open-Meteo</li>
-    </ul>
-    <p class="credits">App version <b>2026-08-05c</b>. If this does not match
+    <p class="credits">App version <b>2026-08-05e</b>. If this does not match
     what you just published, the phone is running a cached copy: delete the
     home screen icon, reopen the page in Safari, and add it again.</p>
+    <p class="credits">Forecast data comes from public sources, free of
+    charge:</p>
+    <ul class="credits">
+      <li><b>NOAA / NCEP HRRR-AK</b>, the 3 km High-Resolution Rapid Refresh
+        Alaska model, for the first 48 hours, retrieved from the NOAA Open
+        Data Dissemination archive on AWS.</li>
+      <li><b>Open-Meteo</b>, blending global models including NOAA GFS and
+        DWD ICON, for days 3 through 5.</li>
+      <li><b>NOAA National Weather Service</b> forecast grids for the NWS
+        option.</li>
+      <li><b>Copernicus GLO-90</b> elevation data, via Open-Meteo, used to
+        correct temperatures to your actual ground height.</li>
+    </ul>
+    <p class="credits">Model data is downloaded and packed by <b>Herbie</b>
+    and <b>pygrib</b>. None of these organisations endorse or have any
+    involvement with this tool, and any errors in the forecast you see here
+    are this tool's, not theirs.</p>
   </section>
 </main>
 
@@ -267,7 +360,8 @@ const store = {
   del(k){ try { localStorage.removeItem(k); } catch(e){} }
 };
 let model = store.get('model') || 'hrrr';
-let size = store.get('size') || 'brief';
+let tier = store.get('tier') || 'standard';
+let basicVariant = store.get('basicVariant') || 'basic48';
 let units = store.get('units') || 'us';
 let theme = store.get('theme') || 'day';
 let fixData = null;
@@ -281,10 +375,13 @@ const MODEL_HELP = {
   nws: 'Forecaster-adjusted NWS grids through day 5. No ridge winds.'
 };
 const KEYWORD = { hrrr: '', '5day': ' 5day', nws: ' nws' };
-const SIZE_HELP = {
-  brief: 'Fewer time steps and 2 reply messages. Best for conserving message quota.',
-  full: 'Twice the time steps and up to 4 reply messages.'
+const TIER_HELP = {
+  basic: 'One message back. Cheapest on your inReach plan.',
+  standard: 'Two messages back. Twice the time steps of Basic.',
+  full: 'Three messages back. Hourly detail through the first day.',
 };
+const TIER_KEYWORD = { basic48: ' basic', basic24: ' b24',
+                       standard: '', full: ' full' };
 const PTYPE_WORD = { rain:'Rain', snow:'Snow', mixed:'Rain / snow', none:'' };
 const DIR_INDEX = {N:0,NNE:1,NE:2,ENE:3,E:4,ESE:5,SE:6,SSE:7,S:8,SSW:9,SW:10,WSW:11,W:12,WNW:13,NW:14,NNW:15};
 const TRAVEL_ARROWS = ['↓','↙','↙','↙','←','↖','↖','↖','↑','↗','↗','↗','→','↘','↘','↘'];
@@ -295,13 +392,24 @@ function show(which){
     $('tab-' + id).setAttribute('aria-selected', id === which);
   });
 }
-function setSize(v){
-  size = v; store.set('size', v);
-  $('sz-brief').setAttribute('aria-pressed', v === 'brief');
-  $('sz-full').setAttribute('aria-pressed', v === 'full');
-  $('sizeHelp').textContent = SIZE_HELP[v];
+function setTier(v){
+  tier = v; store.set('tier', v);
+  ['basic','standard','full'].forEach(x =>
+    $('tier-' + x).setAttribute('aria-pressed', x === v));
+  $('basicOpts').hidden = v !== 'basic';
+  $('tierHelp').textContent = TIER_HELP[v];
   if (fixData) renderRequest();
 }
+
+function setBasic(v){
+  basicVariant = v; store.set('basicVariant', v);
+  $('bs-48').setAttribute('aria-pressed', v === 'basic48');
+  $('bs-24').setAttribute('aria-pressed', v === 'basic24');
+  if (fixData) renderRequest();
+}
+
+function tierKey(){ return tier === 'basic' ? basicVariant : tier; }
+
 function setModel(m){
   model = m; store.set('model', m);
   ['hrrr','5day','nws'].forEach(x => $('md-' + x).setAttribute('aria-pressed', x === m));
@@ -338,10 +446,17 @@ function renderRequest(){
   $('fixMeta').innerHTML = '<b>' + f.lat.toFixed(4) + ', ' + f.lon.toFixed(4) + '</b><br>' +
     'accurate to about ' + Math.round(f.acc) + ' m' +
     (f.alt != null ? ' · GPS elevation ' + Math.round(f.alt) + ' m' : '');
-  $('reqText').textContent = 'WX ' + f.lat.toFixed(4) + ' ' + f.lon.toFixed(4) + KEYWORD[model] +
-    (size === 'brief' ? ' brief' : '');
-  $('sendHelp').textContent = 'Send this to wendlingwx@gmail.com. The reply comes back as ' +
-    (size === 'brief' ? '2 messages.' : 'up to 4 messages.');
+  // Six decimals is roughly 10 cm, finer than any model grid, and it
+  // matches what the inReach itself reports. If you leave location
+  // sharing on, the service uses the device's own coordinates instead,
+  // which are more accurate than a phone fix indoors or under canopy.
+  $('reqText').textContent =
+    'WX ' + f.lat.toFixed(6) + ' ' + f.lon.toFixed(6) +
+    KEYWORD[model] + TIER_KEYWORD[tierKey()];
+  const msgs = tier === 'basic' ? 1 : tier === 'standard' ? 2 : 3;
+  $('sendHelp').textContent =
+    'Send this to your wx address from the inReach. The reply comes back as ' +
+    msgs + (msgs === 1 ? ' message.' : ' messages.');
 }
 async function copy(text, btn){
   try { await navigator.clipboard.writeText(text); }
@@ -351,19 +466,37 @@ async function copy(text, btn){
   }
   const old=btn.textContent; btn.textContent='Copied'; setTimeout(()=>btn.textContent=old,1400);
 }
-async function pasteAndDecode(){
-  const err=$('decErr'); err.hidden=true;
-  try{
-    const text=await navigator.clipboard.readText();
-    if(!text.trim()) throw new Error('The clipboard is empty.');
-    $('code').value=text; doDecode();
-  }catch(e){
-    err.hidden=false; err.textContent='Clipboard access was blocked. Paste into the box, then tap Read typed text.';
-  }
+function boxCount(){ return $('msgBoxes').children.length; }
+
+function addBox(){
+  const n = boxCount() + 1;
+  if (n > 4) return;
+  const wrap = document.createElement('div');
+  wrap.className = 'msgBox';
+  wrap.innerHTML = '<label for="msg' + n + '">Message ' + n + '</label>' +
+    '<textarea id="msg' + n + '" rows="2" autocapitalize="off" ' +
+    'autocorrect="off" spellcheck="false" placeholder="Paste message ' + n + '"></textarea>';
+  $('msgBoxes').appendChild(wrap);
+  $('addBoxBtn').hidden = boxCount() >= 4;
 }
+
+function resetBoxes(n){
+  $('msgBoxes').innerHTML = '';
+  for (let i = 0; i < (n || 2); i++) addBox();
+}
+
+function collectBoxes(){
+  const out = [];
+  for (let i = 1; i <= boxCount(); i++){
+    const el = document.getElementById('msg' + i);
+    if (el && el.value.trim()) out.push(el.value.trim());
+  }
+  return out.join('\n');
+}
+
 function doDecode(){
   const err=$('decErr'), out=$('report'); err.hidden=true; out.innerHTML='';
-  const text=$('code').value.trim();
+  const text=collectBoxes();
   try{
     const r=decode(text); currentForecast=r; currentCode=text; currentDecodedAt=new Date();
     store.set('last-code',text); store.set('last-decoded-at',currentDecodedAt.toISOString());
@@ -375,18 +508,18 @@ function restoreLast(){
   try{
     currentForecast=decode(text); currentCode=text;
     currentDecodedAt=new Date(store.get('last-decoded-at') || Date.now());
-    $('code').value=text; renderCurrent(); updateLastCard(); setDecodeInput(false);
+    renderCurrent(); updateLastCard(); setDecodeInput(false);
   }catch(e){ store.del('last-code'); store.del('last-decoded-at'); }
 }
 function clearLast(){
   store.del('last-code'); store.del('last-decoded-at'); currentForecast=null; currentCode='';
-  currentDecodedAt=null; $('code').value=''; $('report').innerHTML=''; $('lastCard').hidden=true; setDecodeInput(true);
+  currentDecodedAt=null; resetBoxes(2); $('report').innerHTML=''; $('lastCard').hidden=true; setDecodeInput(true);
 }
 function setDecodeInput(showIt){
   $('decodeInput').hidden=!showIt; $('newDecodeBtn').hidden=showIt;
 }
 function showDecodeInput(){
-  setDecodeInput(true); $('code').focus();
+  setDecodeInput(true); resetBoxes(2);
 }
 function updateLastCard(){
   if(!currentForecast){ $('lastCard').hidden=true; return; }
@@ -435,15 +568,17 @@ function summaryCard(h,rows,levelName){
   const maxGust=maxBy(slice,r=>r.gustMph||r.windMph||0);
   const levels=slice.filter(r=>Number.isFinite(r.frzLevelM));
   const minLevel=levels.length?minBy(levels,r=>r.frzLevelM):null;
-  const upper850=maxBy(slice.filter(r=>Number.isFinite(r.w850Mph)),r=>r.w850Mph);
-  const upper700=maxBy(slice.filter(r=>Number.isFinite(r.w700Mph)),r=>r.w700Mph);
+  const upperPeaks=LEVELS.map(lv=>{
+    const pk=maxBy(slice.filter(r=>Number.isFinite(r[lv.key+'Mph'])),r=>r[lv.key+'Mph']);
+    return pk?{lv:lv,row:pk,mph:pk[lv.key+'Mph']}:null;
+  }).filter(Boolean);
   const windLine=maxWind ? wind(maxWind.windMph) : 'Not sent';
   const windSub=maxGust
     ? (maxGust.windDir +
-       (Number.isFinite(maxGust.gustMph) ? ', gust '+wind(maxGust.gustMph) : '') +
+       (Number.isFinite(maxGust.gustMph) ? ', gusts '+wind(maxGust.gustMph) : '') +
        ' near '+fmtTime(maxGust.time))
     : '';
-  const pcpSub=wet.length ? PTYPE_WORD[dominantType(wet)]+' '+fmtTime(wet[0].time)+' to '+fmtTime(wet[wet.length-1].time) : 'No measurable precipitation encoded';
+  const pcpSub=wet.length ? PTYPE_WORD[dominantType(wet)]+' '+fmtTime(wet[0].time)+' to '+fmtTime(wet[wet.length-1].time) : 'No measurable precipitation';
   let levelValue='Not sent',levelSub='';
   if(minLevel){
     levelValue=elev(minLevel.frzLevelM);
@@ -451,34 +586,34 @@ function summaryCard(h,rows,levelName){
     levelSub=(below?'At or below ground':'Lowest point')+' near '+fmtTime(minLevel.time);
   }
   let ridgeValue='Not sent',ridgeSub='';
-  const ridge=maxBy([upper850,upper700].filter(Boolean),r=>r.w850Mph||r.w700Mph||0);
-  if(ridge){
-    const is850=Number.isFinite(ridge.w850Mph) && (!Number.isFinite(ridge.w700Mph)||ridge.w850Mph>=ridge.w700Mph);
-    ridgeValue=wind(is850?ridge.w850Mph:ridge.w700Mph);
-    ridgeSub=(is850?ridge.w850Dir:ridge.w700Dir)+' at '+levelLabel(is850?'w850':'w700')+' near '+fmtTime(ridge.time);
+  const strongest=maxBy(upperPeaks,p=>p.mph);
+  if(strongest){
+    ridgeValue=wind(strongest.mph);
+    ridgeSub=strongest.row[strongest.lv.key+'Dir']+' at '+levelLabel(strongest.lv)+
+      ' near '+fmtTime(strongest.row.time);
   }
-  const hazards=hazardText(h,slice,pcp,maxGust,upper850,upper700,minLevel);
+  const hazards=hazardText(h,slice,pcp,maxGust,upperPeaks,minLevel);
   return '<div class="summaryCard"><div class="summaryTitle"><h2>Next 24 hours</h2><small>'+fmtDate(slice[0].time)+'</small></div>'+ 
     '<div class="summaryGrid">'+
       metric('Temperature',temp(lo)+' to '+temp(hi),'Forecast range')+
       metric('Precipitation',precip(pcp),pcpSub)+
       metric('Surface wind',windLine,windSub)+
       metric(levelName,levelValue,levelSub)+
-      metric('Exposed ridge',ridgeValue,ridgeSub)+
-      metric('Cloud cover',cloudSummary(slice),'Maximum encoded cover')+
+      metric('Winds aloft',ridgeValue,ridgeSub)+
+      metric('Cloud cover',cloudSummary(slice),'Cloudiest point')+
     '</div><div class="alert'+(hazards.warn?' warn':'')+'"><b>'+(hazards.warn?'Watch: ':'Summary: ')+'</b>'+hazards.text+'</div></div>';
 }
 function metric(label,value,sub){
   return '<div class="metric"><span>'+label+'</span><b>'+value+'</b><small>'+sub+'</small></div>';
 }
-function hazardText(h,rows,pcp,maxGust,u850,u700,minLevel){
+function hazardText(h,rows,pcp,maxGust,upperPeaks,minLevel){
   const items=[];
   const snow=rows.some(r=>(r.precipIn||0)>0 && (r.ptype==='snow'||r.ptype==='mixed'));
-  if(snow) items.push('snow or mixed precipitation is encoded');
+  if(snow) items.push('snow or mixed precipitation is forecast');
   if(minLevel && minLevel.frzLevelM<=h.elevM) items.push('the '+(rows.every(r=>r.src==='NWS')?'snow':'freezing')+' level reaches your elevation');
   if(maxGust && (maxGust.gustMph||0)>=35) items.push('surface gusts reach '+wind(maxGust.gustMph));
-  const ridgeMax=Math.max(u850?u850.w850Mph:0,u700?u700.w700Mph:0);
-  if(ridgeMax>=40) items.push('exposed-ridge winds reach '+wind(ridgeMax));
+  const ridgeMax=upperPeaks.length?Math.max(...upperPeaks.map(p=>p.mph)):0;
+  if(ridgeMax>=40) items.push('winds aloft reach '+wind(ridgeMax));
   if(pcp>=0.5) items.push('total precipitation exceeds '+precip(0.5));
   if(items.length) return {warn:true,text:sentenceList(items)+'.'};
   return {warn:false,text:'No major wind, precipitation, or freezing-level thresholds were flagged by this simple screen.'};
@@ -488,7 +623,7 @@ function levelBanner(h,rows,label){
   const below=levels.filter(r=>r.frzLevelM<=h.elevM);
   const min=minBy(levels,r=>r.frzLevelM);
   if(!below.length) return '<div class="levelBanner">'+label+' stays above your ground. Lowest <b>'+elev(min.frzLevelM)+'</b>, about <b>'+elev(min.frzLevelM-h.elevM)+'</b> overhead near '+fmtFull(min.time)+'.</div>';
-  return '<div class="levelBanner below">'+label+' reaches your elevation from about <b>'+fmtFull(below[0].time)+'</b> through <b>'+fmtFull(below[below.length-1].time)+'</b>. Lowest encoded level: <b>'+elev(min.frzLevelM)+'</b>.</div>';
+  return '<div class="levelBanner below">'+label+' reaches your elevation from about <b>'+fmtFull(below[0].time)+'</b> through <b>'+fmtFull(below[below.length-1].time)+'</b>. Lowest point: <b>'+elev(min.frzLevelM)+'</b>.</div>';
 }
 function dayBlocks(h,rows,levelName){
   const groups=[]; const map=new Map();
@@ -504,7 +639,7 @@ function dayBlock(h,g,open,levelName){
   const p=g.rows.reduce((a,r)=>a+(r.precipIn||0),0);
   const gust=Math.max(...g.rows.map(r=>r.gustMph||r.windMph||0));
   const sources=[...new Set(g.rows.map(r=>r.src))];
-  let html='<details class="day" '+(open?'open':'')+'><summary><div class="dayHead"><div><div class="dayName">'+fmtDay(g.date)+' <span class="chev">›</span></div><div class="daySources">'+sources.join(' + ')+'</div></div><div class="dayTotals">'+temp(Math.min(...temps))+' / '+temp(Math.max(...temps))+'<br>'+precip(p)+' · G'+wind(gust)+'</div></div></summary>';
+  let html='<details class="day" '+(open?'open':'')+'><summary><div class="dayHead"><div><div class="dayName">'+fmtDay(g.date)+' <span class="chev">›</span></div><div class="daySources">'+sources.join(' + ')+'</div></div><div class="dayTotals">'+temp(Math.min(...temps))+' / '+temp(Math.max(...temps))+'<br>'+precip(p)+' &middot; gusts '+wind(gust)+'</div></div></summary>';
   let lastSource='';
   g.rows.forEach(r=>{
     if(r.src!==lastSource){html+='<div class="sourceBreak">'+r.src+' · every '+r.stepH+' h</div>';lastSource=r.src;}
@@ -512,42 +647,112 @@ function dayBlock(h,g,open,levelName){
   });
   return html+'</details>';
 }
+
+/* ---------- weather icons ----------
+   Small flat SVGs in the spirit of the ones on weather sites. Chosen from
+   precipitation type, amount and cloud cover, with day and night variants
+   because a sun icon at 2 AM in October would be nonsense. */
+const ICON_SVG = {
+  clearDay: '<circle cx="12" cy="12" r="5" fill="#E8A33D"/>' +
+    '<g stroke="#E8A33D" stroke-width="2" stroke-linecap="round">' +
+    '<path d="M12 1v3M12 20v3M1 12h3M20 12h3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M19.8 4.2l-2.1 2.1M6.3 17.7l-2.1 2.1"/></g>',
+  clearNight: '<path d="M17 13.5A6.5 6.5 0 0 1 10.5 7c0-1.2.3-2.3.9-3.2A8 8 0 1 0 20.2 15c-1 .3-2.1.5-3.2.5z" fill="#8899BB"/>',
+  partlyDay: '<circle cx="9" cy="9" r="4" fill="#E8A33D"/>' +
+    '<g stroke="#E8A33D" stroke-width="1.6" stroke-linecap="round">' +
+    '<path d="M9 1.5v2M1.5 9h2M3.7 3.7l1.4 1.4M14.3 3.7l-1.4 1.4"/></g>' +
+    '<path d="M8 19a4 4 0 0 1 .3-8 5.5 5.5 0 0 1 10.4 1.6A3.4 3.4 0 0 1 18 19z" fill="#B9C4D0"/>',
+  partlyNight: '<path d="M14 8.5A4.5 4.5 0 0 1 9.6 4a5.5 5.5 0 1 0 6.7 6.4 4.6 4.6 0 0 1-2.3.1z" fill="#8899BB"/>' +
+    '<path d="M8 19a4 4 0 0 1 .3-8 5.5 5.5 0 0 1 10.4 1.6A3.4 3.4 0 0 1 18 19z" fill="#B9C4D0"/>',
+  cloudy: '<path d="M7 19a4.2 4.2 0 0 1 .3-8.4 5.8 5.8 0 0 1 11 1.7A3.6 3.6 0 0 1 17.8 19z" fill="#98A6B4"/>',
+  overcast: '<path d="M7 19a4.2 4.2 0 0 1 .3-8.4 5.8 5.8 0 0 1 11 1.7A3.6 3.6 0 0 1 17.8 19z" fill="#7C8896"/>' +
+    '<path d="M4 16a3 3 0 0 1 .5-6 4.5 4.5 0 0 1 3-2.6" fill="none" stroke="#9AA6B2" stroke-width="1.5"/>',
+  rain: '<path d="M7 15.5a4.2 4.2 0 0 1 .3-8.4 5.8 5.8 0 0 1 11 1.7 3.6 3.6 0 0 1-.5 6.7z" fill="#8FA0AF"/>' +
+    '<g stroke="#2F7FB5" stroke-width="2" stroke-linecap="round">' +
+    '<path d="M9 18l-1 3M13 18l-1 3M17 18l-1 3"/></g>',
+  heavyRain: '<path d="M7 15.5a4.2 4.2 0 0 1 .3-8.4 5.8 5.8 0 0 1 11 1.7 3.6 3.6 0 0 1-.5 6.7z" fill="#6E7E8C"/>' +
+    '<g stroke="#1D63A8" stroke-width="2.2" stroke-linecap="round">' +
+    '<path d="M8 17.5l-1.6 4M12 17.5l-1.6 4M16 17.5l-1.6 4M20 17.5l-1.6 4"/></g>',
+  snow: '<path d="M7 15.5a4.2 4.2 0 0 1 .3-8.4 5.8 5.8 0 0 1 11 1.7 3.6 3.6 0 0 1-.5 6.7z" fill="#9BA9B7"/>' +
+    '<g stroke="#4B62B0" stroke-width="1.8" stroke-linecap="round">' +
+    '<path d="M9 18.5v3M7.7 20h2.6M14 18.5v3M12.7 20h2.6"/></g>',
+  mixed: '<path d="M7 15.5a4.2 4.2 0 0 1 .3-8.4 5.8 5.8 0 0 1 11 1.7 3.6 3.6 0 0 1-.5 6.7z" fill="#8FA0AF"/>' +
+    '<g stroke="#2F7FB5" stroke-width="2" stroke-linecap="round"><path d="M9 18l-1 3"/></g>' +
+    '<g stroke="#4B62B0" stroke-width="1.8" stroke-linecap="round">' +
+    '<path d="M15 18.5v3M13.7 20h2.6"/></g>',
+};
+
+function wxIcon(r, lat, lon){
+  const day = isDaylight(r.time, lat, lon);
+  const c = r.cloudPct;
+  let key;
+  if ((r.precipIn || 0) > 0 && r.ptype && r.ptype !== 'none'){
+    if (r.ptype === 'snow') key = 'snow';
+    else if (r.ptype === 'mixed') key = 'mixed';
+    else key = (r.precipIn >= 0.1) ? 'heavyRain' : 'rain';
+  } else if (!Number.isFinite(c)) {
+    key = day ? 'clearDay' : 'clearNight';
+  } else if (c >= 88) key = 'overcast';
+  else if (c >= 62) key = 'cloudy';
+  else if (c >= 25) key = day ? 'partlyDay' : 'partlyNight';
+  else key = day ? 'clearDay' : 'clearNight';
+  return '<svg class="wxIcon" viewBox="0 0 24 24" aria-hidden="true">' +
+         ICON_SVG[key] + '</svg>';
+}
+
+/* Rough solar elevation. Good to a degree or so, which is all we need to
+   decide between a sun and a moon. Matters in Alaska, where the answer
+   swings from all day to none of it. */
+function isDaylight(date, lat, lon){
+  if (!Number.isFinite(lat)) return true;
+  const rad = Math.PI / 180;
+  const start = Date.UTC(date.getUTCFullYear(), 0, 0);
+  const doy = Math.floor((date.getTime() - start) / 86400000);
+  const frac = date.getUTCHours() + date.getUTCMinutes() / 60;
+  const decl = 23.44 * rad * Math.sin(2 * Math.PI * (doy - 81) / 365);
+  const hourAngle = (frac + lon / 15 - 12) * 15 * rad;
+  const elev = Math.asin(Math.sin(lat * rad) * Math.sin(decl) +
+    Math.cos(lat * rad) * Math.cos(decl) * Math.cos(hourAngle));
+  return elev > -6 * rad;      // civil twilight counts as day
+}
+
 function weatherRow(h,r,levelName){
-  const w=r.windMph===0?'Calm':(r.windDir||'')+' '+wind(r.windMph||0)+(Number.isFinite(r.gustMph)&&r.gustMph-(r.windMph||0)>=6?' <span class="gust">G'+wind(r.gustMph)+'</span>':'');
+  const w=r.windMph===0?'Calm':(r.windDir||'')+' '+wind(r.windMph||0)+(Number.isFinite(r.gustMph)&&r.gustMph-(r.windMph||0)>=6?' <span class="gust">gusts '+wind(r.gustMph)+'</span>':'');
   const arrow=r.windMph===0?'·':windArrow(r.windDir);
   const parts=[];
   if((r.precipIn||0)>0) parts.push('<span class="pill '+(r.ptype||'rain')+'">'+(PTYPE_WORD[r.ptype]||'Precip')+' '+precip(r.precipIn)+'</span>');
   if(Number.isFinite(r.cloudPct)) parts.push(cloudLabel(r.cloudPct));
-  if(!parts.length) parts.push('No precipitation encoded');
+  if(!parts.length) parts.push('No precipitation');
   const sub=[];
   if(Number.isFinite(r.frzLevelM)) sub.push(levelName+' '+elev(r.frzLevelM)+(r.frzLevelM<=h.elevM?' · at ground':''));
-  if(Number.isFinite(r.w850Mph)) sub.push(levelLabel('w850',true)+' '+r.w850Dir+' '+wind(r.w850Mph));
-  if(Number.isFinite(r.w700Mph)) sub.push(levelLabel('w700',true)+' '+r.w700Dir+' '+wind(r.w700Mph));
-  return '<div class="wxrow"><div class="wxTime">'+fmtTime(r.time)+'</div><div class="wxTemp">'+temp(r.tempF)+'</div><div class="wxMain"><div class="wxWind"><span class="windArrow">'+arrow+'</span>'+w+'</div><div class="wxLine">'+parts.join(' · ')+'</div>'+(sub.length?'<div class="wxSub">'+sub.join(' · ')+'</div>':'')+'</div></div>';
+  LEVELS.forEach(lv=>{
+    if(Number.isFinite(r[lv.key+'Mph']))
+      sub.push(levelLabel(lv)+' '+r[lv.key+'Dir']+' '+wind(r[lv.key+'Mph']));
+  });
+  return '<div class="wxrow"><div class="wxTime">'+fmtTime(r.time)+'</div><div class="wxTemp">'+temp(r.tempF)+wxIcon(r,h.lat,h.lon)+'</div><div class="wxMain"><div class="wxWind"><span class="windArrow">'+arrow+'</span>'+w+'</div><div class="wxLine">'+parts.join(' · ')+'</div>'+(sub.length?'<div class="wxSub">'+sub.join(' · ')+'</div>':'')+'</div></div>';
 }
 function footerStats(rows){
   const total=rows.reduce((a,r)=>a+(r.precipIn||0),0);
-  const u850=maxBy(rows.filter(r=>Number.isFinite(r.w850Mph)),r=>r.w850Mph);
-  const u700=maxBy(rows.filter(r=>Number.isFinite(r.w700Mph)),r=>r.w700Mph);
   let ridge='';
-  if(u850) ridge+='Wind at '+levelLabel('w850')+' peaks <b>'+u850.w850Dir+' '+wind(u850.w850Mph)+'</b> near '+fmtFull(u850.time);
-  if(u700) ridge+=(ridge?'<br>':'')+'Wind at '+levelLabel('w700')+' peaks <b>'+u700.w700Dir+' '+wind(u700.w700Mph)+'</b> near '+fmtFull(u700.time);
-  return '<div class="footerStats">Total encoded precipitation: <b>'+precip(total)+'</b>'+(ridge?'<br>'+ridge:'')+'</div><div class="legend">Wind arrows point where the wind is traveling; the compass abbreviation states where it comes from. Times use this phone\'s local time. Ridge-level winds are reported at the pressure levels the model uses, which sit near these heights but shift by a few hundred feet day to day. Later forecast segments may use coarser data.</div>';
+  LEVELS.forEach(lv=>{
+    const pk=maxBy(rows.filter(r=>Number.isFinite(r[lv.key+'Mph'])),r=>r[lv.key+'Mph']);
+    if(pk) ridge+=(ridge?'<br>':'')+'Wind at '+levelLabel(lv)+' peaks <b>'+
+      pk[lv.key+'Dir']+' '+wind(pk[lv.key+'Mph'])+'</b> near '+fmtFull(pk.time);
+  });
+  return '<div class="footerStats">Total precipitation: <b>'+precip(total)+'</b>'+(ridge?'<br>'+ridge:'')+'</div><div class="legend">Wind arrows point where the wind is traveling; the compass abbreviation states where it comes from. Times use this phone\'s local time. Winds aloft are interpolated to 3,000, 6,000 and 10,000 ft above sea level, and only the HRRR-AK model provides them. Later forecast segments may use coarser data.</div>';
 }
 
-// Pressure levels expressed as the heights a person actually thinks in.
-// These vary day to day by a few hundred feet; the wording says "about"
-// so the approximation is visible rather than implied.
-const LEVELS = {
-  w850: { m: 1500, label: 'about 5,000 ft' },
-  w700: { m: 3000, label: 'about 10,000 ft' }
-};
-function levelLabel(key, short){
-  const us = units === 'us';
-  const bare = us ? LEVELS[key].label.replace('about ', '')
-                  : LEVELS[key].m.toLocaleString() + ' m';
-  return short ? bare : 'about ' + bare;
+// Winds aloft come already interpolated to these heights by the backend,
+// so the labels are exact rather than approximations of a pressure level.
+const LEVELS = [
+  { key:'w3k', ft:3000, m:914  },
+  { key:'w6k', ft:6000, m:1829 },
+  { key:'w9k', ft:9000, m:2743 }
+];
+function levelLabel(lv){
+  return units === 'us' ? lv.ft.toLocaleString() + ' ft'
+                        : lv.m.toLocaleString() + ' m';
 }
+function upperAt(r, lv){ return r[lv.key + 'Mph']; }
 
 // Ground elevation is transmitted to the metre, unlike freezing level,
 // so it does not need the same coarse rounding.
@@ -560,7 +765,12 @@ function wind(mph){ return units==='us'?Math.round(mph)+' mph':Math.round(mph*1.
 function precip(inches){ return units==='us'?inches.toFixed(2)+' in':Math.round(inches*25.4)+' mm'; }
 // Freezing level arrives in 50 m steps, so round the display to match.
 // Showing 5,741 ft would imply a precision the message never carried.
+// The encoder writes 6350 m to mean "freezing level is above the part of
+// the column the model sampled", which happens on warm summer days. Show
+// that as a bound, never as a number that looks measured.
+const FRZ_SENTINEL=6350;
 function elev(m){
+  if(m>=FRZ_SENTINEL) return units==='us'?'above 20,000 ft':'above 6,000 m';
   return units==='us'
     ? (Math.round(m*3.28084/100)*100).toLocaleString()+' ft'
     : (Math.round(m/50)*50).toLocaleString()+' m';
@@ -587,7 +797,7 @@ function maxBy(arr,fn){ if(!arr.length)return null;return arr.reduce((a,b)=>fn(b
 function minBy(arr,fn){ if(!arr.length)return null;return arr.reduce((a,b)=>fn(b)<fn(a)?b:a); }
 function sentenceList(items){ if(items.length===1)return items[0];if(items.length===2)return items[0]+' and '+items[1];return items.slice(0,-1).join(', ')+', and '+items[items.length-1]; }
 
-setSize(size); setModel(model); updatePrefs(); restoreLast();
+setTier(tier); setBasic(basicVariant); setModel(model); updatePrefs(); restoreLast();
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>

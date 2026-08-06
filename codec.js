@@ -9,7 +9,7 @@ const DIRS = ["N","NNE","NE","ENE","E","ESE","SE","SSE",
 const STEP_HOURS = [1, 2, 3, 4, 6, 8, 12, 24];
 const PTYPES = ["none", "rain", "snow", "mixed"];
 const SOURCES = ["HRRR-AK", "RRFS", "Open-Meteo", "NWS", "GFS", "meteoblue", "?", "?"];
-const F = { TEMP:1, WIND:2, GUST:4, PRECIP:8, CLOUD:16, FRZ:32, UPPER:64 };
+const F = { TEMP:1, WIND:2, GUST:4, PRECIP:8, CLOUD:16, FRZ:32, UPPER:64, UPPER1:128 };
 
 // Winds aloft are reported at heights people plan around. The backend
 // interpolates model pressure levels to these before encoding.
@@ -18,6 +18,8 @@ const UPPER_LEVELS = [
   { key: 'w6k',  m: 1829, ft: 6000  },
   { key: 'w10k', m: 3048, ft: 10000 }
 ];
+// Basic replies carry one mid level instead of three.
+const UPPER1_LEVEL = { key: 'w5k', m: 1524, ft: 5000 };
 
 const PCP_TABLE = [0.0];
 for (let i = 1; i < 32; i++) {
@@ -214,6 +216,12 @@ function decodeCode(code) {
           st[lv.key + 'DirDeg'] = d * 22.5;
         }
       }
+      if (seg.fields & F.UPPER1) {
+        st.w5kMph = read(6);
+        const d5 = read(4);
+        st.w5kDir = DIRS[d5];
+        st.w5kDirDeg = d5 * 22.5;
+      }
       seg.steps.push(st);
     }
     segments.push(seg);
@@ -248,5 +256,5 @@ function stepTime(header, seg, index) {
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { decode, joinParts, stepTime, F, ALPHABET, UPPER_LEVELS };
+  module.exports = { decode, joinParts, stepTime, F, ALPHABET, UPPER_LEVELS, UPPER1_LEVEL };
 }

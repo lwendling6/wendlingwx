@@ -128,6 +128,11 @@ table.ch td.newsrc{border-left:2px solid var(--amber)}
 .htab{width:100%;border-collapse:collapse;font:11px var(--mono);margin:8px 0 12px}
 .htab th,.htab td{border:1px solid var(--edge);padding:6px;text-align:left;vertical-align:top}
 .htab th{background:var(--panel2);color:var(--ice);letter-spacing:.06em}
+.tipbox{border:1px solid var(--edge);background:var(--panel2);padding:12px 13px;
+  margin:14px 0;font-family:var(--sans);font-size:13.5px;line-height:1.5}
+.tipbox b{font-family:var(--mono);letter-spacing:.04em}
+.tipbox a{color:var(--ice);text-decoration:none;border-bottom:1px solid var(--ice)}
+.tipbox .sub{display:block;margin-top:6px;font-size:12px;color:var(--dim)}
 .warnbox{border-left:3px solid var(--red);background:var(--panel2);padding:11px 12px;
   font-family:var(--sans);font-size:13px;line-height:1.5;margin:14px 0}
 nav{position:fixed;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(4,1fr);
@@ -287,10 +292,15 @@ nav button.on{color:var(--ice);box-shadow:inset 0 2px 0 var(--ice)}
       the shape before reading any numbers. Below it the forecast is a table you
       scroll sideways: time runs left to right, variables run down. The first
       column stays put while you scroll, so you always know which row you are
-      reading. An amber line down the chart marks where the data source changes,
-      for example HRRR-AK handing off to the global model on day 3. Wind arrows
-      point the way the wind is travelling; the compass letters say where it
-      comes from.</p>
+      reading. Wind arrows point the way the wind is travelling; the compass
+      letters say where it comes from.</p>
+      <p>An <b>amber vertical line</b> marks a change in the forecast behind
+      the chart. Sometimes that is a change of time step, for example Full
+      switching from hourly to 2 hourly after the first day, so the columns
+      to its right cover twice as long. Sometimes it is a change of data
+      source, for example HRRR-AK handing off to the global model on day 3.
+      Either way, read the columns to the right of it as coarser, and in the
+      5 day options, less trustworthy.</p>
 
       <h3>If things go wrong</h3>
       <ol>
@@ -309,8 +319,18 @@ nav button.on{color:var(--ice);box-shadow:inset 0 2px 0 var(--ice)}
       river crossing, a flight, or an exposed night on the ridge on a single
       forecast from anything, including this.</div>
 
+      <h3>Support</h3>
+      <div class="tipbox">
+        Buy the creator a coffee:
+        <a href="https://venmo.com/u/Logan-Wendling" target="_blank"
+           rel="noopener"><b>Venmo @Logan-Wendling</b></a>
+        <span class="sub">Entirely optional. The service is free to use and
+        costs nothing to run; this just says thanks. The link needs a signal,
+        so it will not open in the field.</span>
+      </div>
+
       <h3>Credits</h3>
-      <p class="k">Built by Logan Wendling. App version <b>2026-08-06c</b>. If
+      <p class="k">Built by Logan Wendling. App version <b>2026-08-06e</b>. If
       that does not match what you just published, this phone is running a
       cached copy: delete the home screen icon, reopen in Safari, add it again.</p>
       <p class="k">Data from NOAA (HRRR-AK, National Weather Service),
@@ -699,7 +719,7 @@ function chart(h,rows){
         ? arrow(r.w5kDirDeg, r.w5kMph) : '<span class="zero">\u2014</span>'); });
   }
   t+='</table></div><div class="hint"><span>scroll sideways for later hours</span>'+
-     '<span>arrows point downwind</span></div></div>';
+     '<span>amber line = step or source change</span></div></div>';
   return t;
 }
 

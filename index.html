@@ -76,7 +76,16 @@ header{display:flex;align-items:center;justify-content:space-between;
   font-size:11.5px;margin-bottom:8px;line-height:1.5}
 .flag.ice{border-left-color:var(--ice)}
 .flag.red{border-left-color:var(--red)}
-.spark{display:block;width:100%;height:62px;margin:8px 0 4px}
+.plotWrap{position:relative;margin:8px 0 2px}
+.spark{display:block;width:100%;height:62px}
+.plotWrap .ylab{position:absolute;left:2px;font:10px var(--mono);color:var(--dim);
+  pointer-events:none}
+.plotWrap .ylab.hi{top:0}
+.plotWrap .ylab.lo{bottom:0}
+.axis{position:relative;height:26px;margin-bottom:6px}
+.axis .tick{position:absolute;top:0;text-align:center;white-space:nowrap;
+  font:9.5px var(--mono);color:var(--dim);letter-spacing:.04em;line-height:1.35}
+.axis .tick b{display:block;color:var(--ice);font-weight:700}
 .chartBox{position:relative;border:1px solid var(--edge);background:var(--panel);
   overflow:hidden;margin-bottom:10px}
 .scroller{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
@@ -301,7 +310,7 @@ nav button.on{color:var(--ice);box-shadow:inset 0 2px 0 var(--ice)}
       forecast from anything, including this.</div>
 
       <h3>Credits</h3>
-      <p class="k">Built by Logan Wendling. App version <b>2026-08-06a</b>. If
+      <p class="k">Built by Logan Wendling. App version <b>2026-08-06c</b>. If
       that does not match what you just published, this phone is running a
       cached copy: delete the home screen icon, reopen in Safari, add it again.</p>
       <p class="k">Data from NOAA (HRRR-AK, National Weather Service),
@@ -538,18 +547,60 @@ function render(h,segs){
     '<br>'+h.lat.toFixed(4)+', '+h.lon.toFixed(4)+' \u00B7 GROUND '+
     ft100(h.elevM)+' FT \u00B7 '+hours+'</div>';
 
-  const W=560,H=62;
+  const W=560,H=62,PAD=10;
+  const xAt=function(i){ return PAD + i*(W-2*PAD)/Math.max(1,temps.length-1); };
   const pts=temps.map(function(v,i){
-    return [10+i*(W-20)/Math.max(1,temps.length-1),
-            H-9-((v-lo)/((hi-lo)||1))*(H-24)];
+    return [xAt(i), H-9-((v-lo)/((hi-lo)||1))*(H-24)];
   });
   const path=pts.map(function(p,i){return (i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1);}).join(' ');
   const area=path+' L'+pts[pts.length-1][0].toFixed(1)+' '+H+' L'+pts[0][0].toFixed(1)+' '+H+' Z';
-  html+='<svg class="spark" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'+
-    '<path d="'+area+'" fill="rgba(226,160,63,.13)"/>'+
-    '<path d="'+path+'" fill="none" stroke="#E2A03F" stroke-width="2"/>'+
-    '<text x="10" y="12" fill="#7C8E92" font-size="10" font-family="monospace">'+hi+'\u00B0</text>'+
-    '<text x="10" y="'+(H-1)+'" fill="#7C8E92" font-size="10" font-family="monospace">'+lo+'\u00B0</text></svg>';
+
+  /* Tick wherever the local date rolls over, plus the first and last
+     points. Keying on the date rather than an exact midnight matters
+     because a 3 or 4 hourly plan may never land on hour zero. */
+  const dayKey=function(d){ return d.toDateString(); };
+  const dayStarts=[];
+  rows.forEach(function(r,i){
+    if(i>0 && dayKey(r.time)!==dayKey(rows[i-1].time)) dayStarts.push(i);
+  });
+
+  let grid='';
+  dayStarts.forEach(function(i){
+    grid+='<line x1="'+xAt(i).toFixed(1)+'" y1="4" x2="'+xAt(i).toFixed(1)+
+      '" y2="'+(H-4)+'" stroke="#2C3C41" stroke-width="1"/>';
+  });
+
+  // Drop any tick that would crowd its neighbour, so labels never collide.
+  const MIN_GAP=13;   // percent of width
+  const pctAt=function(i){ return (xAt(i)/W)*100; };
+  const keep=[0];
+  dayStarts.forEach(function(i){
+    if(pctAt(i)-pctAt(keep[keep.length-1])>=MIN_GAP && 100-pctAt(i)>=MIN_GAP) keep.push(i);
+  });
+  keep.push(rows.length-1);
+
+  html+='<div class="plotWrap">'+
+    '<svg class="spark" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'+
+      grid+
+      '<path d="'+area+'" fill="rgba(226,160,63,.13)"/>'+
+      '<path d="'+path+'" fill="none" stroke="#E2A03F" stroke-width="2"/>'+
+    '</svg>'+
+    '<span class="ylab hi">'+hi+'\u00B0</span>'+
+    '<span class="ylab lo">'+lo+'\u00B0</span>'+
+  '</div>';
+
+  html+='<div class="axis">'+keep.map(function(i,n){
+    const t=rows[i].time;
+    const pct=(xAt(i)/W)*100;
+    // pin the end labels inside the box so they cannot clip off the edge
+    let style;
+    if(n===0) style='left:0;transform:none';
+    else if(n===keep.length-1) style='right:0;transform:none';
+    else style='left:'+pct.toFixed(2)+'%;transform:translateX(-50%)';
+    return '<span class="tick" style="'+style+'">'+
+      '<b>'+t.toLocaleDateString([], {weekday:'short'}).toUpperCase()+'</b>'+
+      t.toLocaleTimeString([], {hour:'numeric'}).replace(/\s/g,'')+'</span>';
+  }).join('')+'</div>';
 
   const frz=rows.map(function(r){return r.frzLevelM;}).filter(function(v){return v!==undefined;});
   if(frz.length){
@@ -594,8 +645,13 @@ function chart(h,rows){
     return '<tr class="'+cls+'"><th class="rl">'+label+'</th>'+
       rows.map(fn).join('')+'</tr>';
   };
+  /* Wind direction is meteorological: the bearing the wind comes FROM.
+     The glyph is an up arrow, so rotating by that bearing alone would aim
+     it at the source. Add 180 so it points the way the air is travelling,
+     which is what the legend promises and what map apps show. */
   const arrow=function(deg,val){
-    return '<span class="ar" style="transform:rotate('+(deg||0)+'deg)">\u2191</span> '+val;
+    return '<span class="ar" style="transform:rotate('+(((deg||0)+180)%360)+'deg)">'+
+      '\u2191</span> '+val;
   };
 
   let day='';

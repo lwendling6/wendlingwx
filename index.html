@@ -338,7 +338,7 @@ nav button.on{color:var(--ice);box-shadow:inset 0 2px 0 var(--ice)}
       </div>
 
       <h3>Credits</h3>
-      <p class="k">Built by Logan Wendling. App version <b>2026-08-08b</b>. If
+      <p class="k">Built by Logan Wendling. App version <b>2026-08-08c</b>. If
       that does not match what you just published, this phone is running a
       cached copy: delete the home screen icon, reopen in Safari, add it again.</p>
       <p class="k">Data from NOAA (HRRR-AK, National Weather Service),
@@ -431,10 +431,10 @@ function locate(){
   }, {enableHighAccuracy:true, timeout:30000, maximumAge:60000});
 }
 function manual(){
-  const v=prompt('Coordinates as "lat lon", for example 61.104498 -149.878428');
+  const v=prompt('Coordinates as "lat lon", for example 63.06724 -151.00652');
   if(!v) return;
   const m=v.match(/(-?\d+(?:\.\d+)?)[ ,]+(-?\d+(?:\.\d+)?)/);
-  if(!m){ alert('Could not read that. Use decimal degrees, like 61.1045 -149.8784'); return; }
+  if(!m){ alert('Could not read that. Use decimal degrees, like 63.06724 -151.00652'); return; }
   fix={lat:parseFloat(m[1]), lon:parseFloat(m[2]), acc:null, alt:null};
   showMsg();
 }

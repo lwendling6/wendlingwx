@@ -1,4 +1,4 @@
-[README(1).md](https://github.com/user-attachments/files/30801068/README.1.md)
+[README.md](https://github.com/user-attachments/files/30869219/README.md)
 # WendlingWx
 
 **Satellite weather forecasts for the Alaska backcountry.**
@@ -65,7 +65,8 @@ whichever you send from:
 wendlingwx@gmail.com
 ```
 
-Do this at home.
+Do this at home. Typing an email address on the device in the field is
+miserable.
 
 ---
 
@@ -101,7 +102,7 @@ If the app is not handy, any message in this shape works:
 WX <latitude> <longitude> [5day|nws] [basic|full]
 ```
 
-For example `WX 61.1045 -149.8784 5day basic`. With no extra words you get
+For example `WX 63.06724 -151.00652 5day basic`. With no extra words you get
 HRRR-AK at Standard detail, which is two messages back.
 
 ---

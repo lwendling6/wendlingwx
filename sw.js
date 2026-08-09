@@ -1,5 +1,5 @@
 // Bump this cache name whenever index.html, codec.js, or manifest.json changes.
-const CACHE = 'wendlingwx-2026-08-08b';
+const CACHE = 'wendlingwx-2026-08-08c';
 const FILES = ['./', './index.html', './codec.js', './manifest.json'];
 
 self.addEventListener('install', e => {
